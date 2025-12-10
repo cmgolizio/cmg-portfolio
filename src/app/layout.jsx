@@ -1,6 +1,7 @@
 import "./globals.css";
 import Nav from "@/components/nav/Nav";
 import Footer from "@/components/layout/Footer";
+import ThemeSwitch from "@/components/layout/ThemeSwitch";
 
 export const metadata = {
   title: "Christopher Golizio | Portfolio",
@@ -11,10 +12,12 @@ export default function RootLayout({ children }) {
   return (
     <html lang='en'>
       {/* <body className='min-h-screen bg-[#FAF7F2] text-[#1A1A1A] antialiased'> */}
-      <body
+      {/* <body
         className='min-h-screen bg-[#FAF7F2] text-[#1A1A1A]
   dark:bg-[#1A1A1A] dark:text-[#FAF7F2] antialiased'
-      >
+      > */}
+      <body className='min-h-screen font-sans transition-colors duration-300'>
+        {/* <ThemeSwitch /> */}
         <div className='flex min-h-screen flex-col'>
           <Nav />
           <main className='flex-1'>{children}</main>
