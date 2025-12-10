@@ -2,7 +2,8 @@ import Link from "next/link";
 
 export default function ProjectCard({ project }) {
   return (
-    <article className='group flex flex-col rounded-2xl border border-[#D1A954]/30 bg-[#FAF7F2] p-4 shadow-[0_3px_0_rgba(0,0,0,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_12px_rgba(0,0,0,0.08)]'>
+    <article className='group flex flex-col rounded-2xl border border-[#D1A954]/30 bg-[#FAF7F2] dark:bg-[#2A2A2A] dark:border-[#D1A954]/40 shadow-sm transition hover:-translate-y-0.5'>
+      {/* <article className='group flex flex-col rounded-2xl border border-[#D1A954]/30 bg-[#FAF7F2] p-4 shadow-[0_3px_0_rgba(0,0,0,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_12px_rgba(0,0,0,0.08)]'> */}
       <header className='flex items-start justify-between gap-2'>
         <div>
           <h2 className='text-base font-semibold text-[#1A1A1A]'>

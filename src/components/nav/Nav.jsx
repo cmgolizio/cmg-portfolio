@@ -1,11 +1,13 @@
 import Link from "next/link";
 
+import BrassDial from "./BrassDial";
+
 const links = [
-  { href: "/", label: "Workbench" },
-  { href: "/projects", label: "Tool Rack" },
-  { href: "/about", label: "Blueprint" },
-  { href: "/contact", label: "Branding" },
-  { href: "/resume", label: "Cut Sheet" },
+  // { href: "/", label: "Workbench" },
+  { href: "/about", label: "About" },
+  { href: "/resume", label: "Resume" },
+  { href: "/projects", label: "Projects" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export default function Nav() {
@@ -13,7 +15,7 @@ export default function Nav() {
     <header className='border-b border-[#D1A954]/30 bg-[#FAF7F2]/90 backdrop-blur'>
       <div className='mx-auto flex max-w-5xl items-center justify-between px-4 py-3'>
         <Link href='/' className='font-semibold tracking-tight'>
-          <span className='text-sm uppercase text-[#D1A954]'>Workshop of</span>
+          {/* <span className='text-sm uppercase text-[#D1A954]'>Workshop of</span> */}
           <br />
           <span className='text-lg'>Christopher Golizio</span>
         </Link>
@@ -27,6 +29,7 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
+          <BrassDial />
         </nav>
       </div>
     </header>

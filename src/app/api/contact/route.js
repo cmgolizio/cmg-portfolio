@@ -1,3 +1,13 @@
 export async function POST(req) {
-  return Response.json({ message: "Contact form endpoint ready." });
+  try {
+    const body = await req.json();
+
+    console.log("New contact submission:", body);
+
+    // Later: Send email / store in DB / notify you
+
+    return Response.json({ ok: true });
+  } catch (err) {
+    return new Response("Server error", { status: 500 });
+  }
 }
