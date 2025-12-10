@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import BrassDial from "./BrassDial";
+import ThemeSwitch from "../layout/ThemeSwitch";
 
 const links = [
   // { href: "/", label: "Workbench" },
@@ -29,7 +29,7 @@ export default function Nav() {
               {link.label}
             </Link>
           ))}
-          <BrassDial />
+          <ThemeSwitch />
         </nav>
       </div>
     </header>
