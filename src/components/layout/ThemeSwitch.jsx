@@ -57,7 +57,13 @@ export default function ThemeSwitch() {
         opacity: 1,
         transition: { type: "spring", stiffness: 220, damping: 18 },
       }}
-      className='relative flex items-start'
+      drag
+      dragConstraints={{ left: 0, right: 140, top: -12, bottom: 34 }}
+      dragElastic={{ top: 0.18, left: 0.2, right: 0.4, bottom: 0.1 }}
+      dragTransition={{ bounceStiffness: 500, bounceDamping: 26, power: 0.2 }}
+      whileTap={{ cursor: "grabbing", scale: 0.99 }}
+      className='relative flex select-none items-start cursor-grab'
+      style={{ touchAction: "none" }}
       aria-live='polite'
     >
       <div className='pointer-events-none absolute -top-20 left-1/2 flex h-20 w-8 -translate-x-1/2 items-start justify-center'>
@@ -74,7 +80,7 @@ export default function ThemeSwitch() {
       <div
         className='
           relative flex items-center gap-3 rounded-xl border border-slate-300
-          bg-gradient-to-b from-slate-100 via-slate-50 to-slate-200 p-3
+          bg-linear-to-b from-slate-100 via-slate-50 to-slate-200 p-3
           shadow-[0_14px_30px_rgba(0,0,0,0.28)]
         '
         role='presentation'
@@ -82,7 +88,7 @@ export default function ThemeSwitch() {
         {["top-left", "top-right", "bottom-left", "bottom-right"].map((pos) => (
           <span
             key={pos}
-            className='absolute h-2 w-2 rounded-full bg-gradient-to-b from-slate-200 to-slate-400 shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
+            className='absolute h-2 w-2 rounded-full bg-linear-to-b from-slate-200 to-slate-400 shadow-[0_1px_2px_rgba(0,0,0,0.35)]'
             style={{
               left: pos.includes("left") ? "6px" : undefined,
               right: pos.includes("right") ? "6px" : undefined,
