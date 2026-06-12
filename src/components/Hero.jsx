@@ -1,7 +1,8 @@
 "use client";
 
-import { heroWords } from "@/lib/themes";
 import { useTheme } from "@/components/ThemeProvider";
+import HeroWord from "@/components/HeroWord";
+import Magnetic from "@/components/Magnetic";
 
 export default function Hero() {
   const { themeId } = useTheme();
@@ -13,19 +14,23 @@ export default function Hero() {
         <h1 className='reveal d2'>
           I build things.
           <br />
-          <span className='swap'>{heroWords[themeId]}</span>
+          <HeroWord themeId={themeId} />
         </h1>
         <p className='lede reveal d3'>
           Full-stack developer who builds with code, wood, plastic, and circuits
           — and likes when they meet in the middle.
         </p>
         <div className='cta-row reveal d4'>
-          <a className='btn primary' href='#work'>
-            View the work
-          </a>
-          <a className='btn ghost' href='#contact'>
-            Get in touch
-          </a>
+          <Magnetic>
+            <a className='btn primary' href='#work'>
+              View the work
+            </a>
+          </Magnetic>
+          <Magnetic>
+            <a className='btn ghost' href='#contact'>
+              Get in touch
+            </a>
+          </Magnetic>
         </div>
       </div>
 

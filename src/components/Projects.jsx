@@ -1,10 +1,11 @@
 import { projects } from "@/data/projects";
+import TiltCard from "@/components/TiltCard";
 
 const DELAYS = ["d2", "d3", "d4"];
 
 function ProjectCard({ project, delay }) {
   return (
-    <article className={`card reveal ${delay}`}>
+    <TiltCard className={`card reveal ${delay}`}>
       <div className='bar'>
         <span />
         <span />
@@ -33,7 +34,7 @@ function ProjectCard({ project, delay }) {
           Code ↗
         </a>
       </div>
-    </article>
+    </TiltCard>
   );
 }
 

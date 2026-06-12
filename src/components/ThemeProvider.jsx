@@ -77,7 +77,14 @@ export function ThemeProvider({ children }) {
       prevStored.current = storedTheme;
       return;
     }
-    if (preview === null && storedTheme !== prevStored.current) {
+    if (
+      preview === null &&
+      storedTheme !== prevStored.current &&
+      // During the circular theme wipe (.vt-snap present) the switch is
+      // already animated — replaying the entrance rises underneath it
+      // doubles the motion and reads as jank. Replay only on plain switches.
+      !document.documentElement.classList.contains("vt-snap")
+    ) {
       document.querySelectorAll(".reveal").forEach((el) => {
         el.style.animation = "none";
         void el.offsetWidth; // force reflow

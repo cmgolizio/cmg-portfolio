@@ -1,9 +1,11 @@
+import CopyEmail from "@/components/CopyEmail";
+
 export default function Footer() {
   return (
     <footer id='contact'>
       <div className='big reveal d1'>Let&apos;s build something.</div>
       <div className='muted reveal d2'>
-        <a href='mailto:cmgolizio@gmail.com'>cmgolizio@gmail.com</a>
+        <CopyEmail />
         {" · "}
         <a
           href='https://github.com/cmgolizio'

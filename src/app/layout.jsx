@@ -10,6 +10,9 @@ import {
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import ThemeIntro from "@/components/ThemeIntro";
+import CommandPalette from "@/components/CommandPalette";
+import Atmosphere from "@/components/Atmosphere";
+import ScrollReveals from "@/components/ScrollReveals";
 
 // Each font exposes a CSS variable; globals.css points the per-theme
 // --font-display / --font-body tokens at the right one.
@@ -66,7 +69,9 @@ export const metadata = {
 // Runs before React hydrates so the saved theme is applied on first paint (no flash).
 // Validates the stored value: an unknown id would match no token block and
 // render the page unstyled until hydration.
-const themeInitScript = `(function(){try{var t=localStorage.getItem('pf-theme');if(t==='minimal'||t==='technical'||t==='creative'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+// Also tags <html> with .js — globals.css only pauses below-fold reveals
+// (for ScrollReveals' observer) when JS is actually running.
+const themeInitScript = `(function(){try{document.documentElement.classList.add('js');var t=localStorage.getItem('pf-theme');if(t==='minimal'||t==='technical'||t==='creative'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
 
 export default function RootLayout({ children }) {
   return (
@@ -83,6 +88,9 @@ export default function RootLayout({ children }) {
         <ThemeProvider>
           <ThemeSwitcher />
           <ThemeIntro />
+          <CommandPalette />
+          <Atmosphere />
+          <ScrollReveals />
           {children}
         </ThemeProvider>
       </body>
