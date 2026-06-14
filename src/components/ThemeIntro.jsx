@@ -98,10 +98,10 @@ export default function ThemeIntro() {
   return (
     <>
       <div ref={coachRef} className='intro-coach' aria-hidden='true'>
-        3 looks — try one
+        Multiple looks — find your fav!
       </div>
       <div ref={captionRef} className='intro-caption' aria-hidden='true'>
-        one site · three identities
+        one site · multiple identities
       </div>
     </>
   );

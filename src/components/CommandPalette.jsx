@@ -18,8 +18,9 @@ import { switchThemeWithWipe } from "@/lib/themeWipe";
 
 const SECTIONS = [
   { id: "work", label: "Jump to: Selected work", hint: "01" },
-  { id: "skills", label: "Jump to: The toolkit", hint: "02" },
-  { id: "contact", label: "Jump to: Contact", hint: "03" },
+  { id: "workshop", label: "Jump to: The workshop", hint: "02" },
+  { id: "skills", label: "Jump to: The toolkit", hint: "03" },
+  { id: "contact", label: "Jump to: Contact", hint: "04" },
 ];
 
 const LINKS = [

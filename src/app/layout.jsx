@@ -13,6 +13,7 @@ import ThemeIntro from "@/components/ThemeIntro";
 import CommandPalette from "@/components/CommandPalette";
 import Atmosphere from "@/components/Atmosphere";
 import ScrollReveals from "@/components/ScrollReveals";
+import Clicker from "@/components/Clicker";
 
 // Each font exposes a CSS variable; globals.css points the per-theme
 // --font-display / --font-body tokens at the right one.
@@ -91,6 +92,7 @@ export default function RootLayout({ children }) {
           <CommandPalette />
           <Atmosphere />
           <ScrollReveals />
+          <Clicker />
           {children}
         </ThemeProvider>
       </body>

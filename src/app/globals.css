@@ -39,8 +39,19 @@
   --dur: .6s;
   --ease: cubic-bezier(.22, .61, .36, 1);
   --shadow: 0 1px 2px rgba(28, 26, 22, .04), 0 18px 40px -24px rgba(28, 26, 22, .22);
-  --glow: none;
+  /* a no-op shadow (not `none`) so it can join comma-separated shadow lists */
+  --glow: 0 0 #0000;
   --glare-color: rgba(115, 107, 251, .16);
+  /* tactile buttons: rubber-dome — short, soft travel */
+  --key-travel: 2px;
+  --key-side: #c9bfab;
+  --key-side-accent: #5550c2;
+  /* exploded card pose: a calm, shallow drafting angle */
+  --xv-rx: 30deg;
+  --xv-rz: 0deg;
+  --xv-gap: 74px;
+  --xv-scale: .82;
+  --xv-shift: 0px;
 }
 
 :root[data-theme="technical"] {
@@ -66,6 +77,16 @@
   --shadow: 0 0 0 1px rgba(54, 214, 195, .06), 0 20px 50px -30px rgba(0, 0, 0, .9);
   --glow: 0 0 24px -6px var(--accent);
   --glare-color: rgba(32, 214, 196, .20);
+  /* tactile buttons: mechanical keyswitch — firm, clicky travel */
+  --key-travel: 3px;
+  --key-side: #05080f;
+  --key-side-accent: #0e8a7e;
+  /* exploded card pose: steep, like a drawing pinned to a drafting table */
+  --xv-rx: 36deg;
+  --xv-rz: 0deg;
+  --xv-gap: 82px;
+  --xv-scale: .8;
+  --xv-shift: 0px;
 }
 
 :root[data-theme="creative"] {
@@ -93,6 +114,16 @@
   --shadow: 8px 8px 0 var(--accent-2);
   --glow: 0 0 40px -8px var(--accent);
   --glare-color: rgba(255, 255, 255, .28);
+  /* tactile buttons: arcade button — deep, springy travel */
+  --key-travel: 5px;
+  --key-side: #4c1284;
+  --key-side-accent: #c22573;
+  /* exploded card pose: shallow and jaunty */
+  --xv-rx: 26deg;
+  --xv-rz: -6deg;
+  --xv-gap: 78px;
+  --xv-scale: .82;
+  --xv-shift: 0px;
 }
 
 /* default before JS / for the very first paint */
@@ -161,23 +192,115 @@ body::before {
   padding: 0 1.6rem
 }
 
-/* ---------- THEME WIPE (View Transitions) ----------
-   switchThemeWithWipe() sets --vt-x/y/r and snaps CSS transitions off, so
-   the new theme sweeps across the page as a growing circle. */
+/* ---------- THEME TRANSITIONS (View Transitions) ----------
+   switchThemeWithWipe() snaps CSS transitions off and tags <html> with
+   data-vt = the DESTINATION theme. Each identity arrives in a completely
+   different motion language so the switch itself is in character:
+     minimal   — a calm cross-dissolve (pure opacity, no geometry)
+     technical — a CRT power-cycle (old collapses to a scanline, new powers on)
+     creative  — a radial burst from the pressed control (--vt-x/y/r) that
+                 overshoots and pops the color
+   Reset both snapshots first; the per-theme rules below are more specific
+   and win. */
 ::view-transition-old(root),
 ::view-transition-new(root) {
   animation: none;
   mix-blend-mode: normal;
+  transform-origin: center;
 }
 
-::view-transition-new(root) {
-  animation: vt-wipe .55s var(--ease) forwards;
-  clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 0%));
+/* ----- minimal: cross-dissolve. The ONLY transition with no transform or
+   clip — old fades out under new fading in. Quiet and editorial. ----- */
+[data-vt="minimal"]::view-transition-old(root) {
+  animation: vt-dissolve-out .55s var(--ease) both;
 }
 
-@keyframes vt-wipe {
+[data-vt="minimal"]::view-transition-new(root) {
+  animation: vt-dissolve-in .55s var(--ease) both;
+}
+
+@keyframes vt-dissolve-out {
   to {
-    clip-path: circle(var(--vt-r, 120vmax) at var(--vt-x, 50%) var(--vt-y, 0%))
+    opacity: 0;
+  }
+}
+
+@keyframes vt-dissolve-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* ----- technical: CRT power-cycle. Old squashes to a bright horizontal
+   scanline and blinks out; the new screen powers on by snapping open from
+   that line with a brightness flash and a digital stutter (steps). ----- */
+[data-vt="technical"]::view-transition-old(root) {
+  animation: vt-crt-off .2s steps(5, end) both;
+}
+
+[data-vt="technical"]::view-transition-new(root) {
+  animation: vt-crt-on .46s .16s cubic-bezier(.2, .8, .2, 1) both;
+}
+
+@keyframes vt-crt-off {
+  0% {
+    transform: scaleY(1);
+    filter: brightness(1);
+    opacity: 1;
+  }
+
+  70% {
+    transform: scaleY(.05);
+    filter: brightness(2.6);
+  }
+
+  100% {
+    transform: scaleY(.004);
+    filter: brightness(4.5);
+    opacity: .85;
+  }
+}
+
+@keyframes vt-crt-on {
+  0% {
+    transform: scaleY(.004);
+    filter: brightness(4.5);
+  }
+
+  16% {
+    transform: scaleY(.05);
+    filter: brightness(2.4);
+  }
+
+  100% {
+    transform: scaleY(1);
+    filter: brightness(1);
+  }
+}
+
+/* ----- creative: radial burst. The new identity explodes out of the
+   pressed control, overshoots its scale, spins a few degrees, and pops the
+   hue before settling. The ONLY origin-based / explosive transition. ----- */
+[data-vt="creative"]::view-transition-new(root) {
+  animation: vt-burst .66s cubic-bezier(.34, 1.56, .5, 1) both;
+  transform-origin: var(--vt-x, 50%) var(--vt-y, 50%);
+}
+
+@keyframes vt-burst {
+  0% {
+    clip-path: circle(0px at var(--vt-x, 50%) var(--vt-y, 50%));
+    transform: rotate(-5deg) scale(1.08);
+    filter: hue-rotate(45deg) saturate(1.5);
+  }
+
+  68% {
+    transform: rotate(1.5deg) scale(.99);
+  }
+
+  100% {
+    clip-path: circle(var(--vt-r, 140vmax) at var(--vt-x, 50%) var(--vt-y, 50%));
+    transform: none;
+    filter: none;
   }
 }
 
@@ -215,11 +338,11 @@ body::before {
   text-transform: uppercase;
   cursor: pointer;
   color: var(--text-muted);
-  background: transparent;
-  border: 0;
+  /* each option is a keycap sitting in the tray */
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
   padding: .5rem .95rem;
   border-radius: 999px;
-  transition: all .25s var(--ease);
 }
 
 .switcher button:hover {
@@ -520,13 +643,8 @@ body::before {
   border-color: var(--border)
 }
 
-.btn:hover {
-  transform: translateY(-2px)
-}
-
-[data-theme="creative"] .btn:hover {
-  transform: translate(-2px, -2px)
-}
+/* hover never levitates a physical button — the press itself is the motion;
+   the tactile construction lives in the TACTILE CONTROLS section below */
 
 /* hero structural variants */
 [data-theme="minimal"] .hero {
@@ -957,6 +1075,505 @@ footer .muted a:hover {
   overflow: hidden;
 }
 
+/* ============================================================
+   TACTILE CONTROLS
+   Every button is built like a physical key: a cap resting on a
+   visible side wall (--key-side), pressed DOWN by its full travel
+   (--key-travel) with the wall collapsing under it. Latching
+   controls (aria-pressed) stay seated. Per-theme feel comes from
+   the --key-* tokens: rubber dome / keyswitch / arcade button.
+   ============================================================ */
+.btn,
+.switcher button,
+.palette-hint,
+.x-toggle,
+.latch,
+.copy-email .copy-state {
+  --side: var(--key-side);
+  box-shadow: 0 var(--key-travel) 0 var(--side);
+  transition: transform .18s var(--ease), box-shadow .18s var(--ease),
+    filter .2s var(--ease), background .25s, color .25s, border-color .25s;
+}
+
+.btn:hover,
+.switcher button:hover,
+.palette-hint:hover,
+.x-toggle:hover,
+.latch:hover {
+  filter: brightness(1.06);
+}
+
+/* the press: sink by the full travel, wall collapses, bottoms out */
+.btn:active,
+.switcher button:active,
+.palette-hint:active,
+.x-toggle:active,
+.latch:active,
+.copy-email:active .copy-state {
+  transform: translateY(var(--key-travel));
+  box-shadow: 0 0 0 var(--side), inset 0 2px 5px rgba(0, 0, 0, .22);
+  transition-duration: .05s;
+  /* release re-uses the slower base transition: snap down, spring back */
+}
+
+/* accent-colored caps sit on an accent-tinted wall */
+.btn.primary {
+  --side: var(--key-side-accent);
+  box-shadow: 0 var(--key-travel) 0 var(--side), var(--glow);
+}
+
+.btn.primary:active {
+  box-shadow: 0 0 0 var(--side), var(--glow), inset 0 2px 5px rgba(0, 0, 0, .25);
+}
+
+/* latching switches stay seated until toggled again */
+.switcher button[aria-pressed="true"],
+.latch[aria-pressed="true"],
+.x-toggle[aria-pressed="true"] {
+  transform: translateY(var(--key-travel));
+  box-shadow: 0 0 0 var(--side), inset 0 2px 6px rgba(0, 0, 0, .26);
+}
+
+.switcher button[aria-pressed="true"] {
+  --side: var(--key-side-accent);
+  box-shadow: 0 0 0 var(--side), var(--glow), inset 0 2px 6px rgba(0, 0, 0, .26);
+}
+
+/* machine latch: a labeled switch with an indicator LED */
+.latch {
+  display: inline-flex;
+  align-items: center;
+  gap: .45rem;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: max(calc(var(--radius) - 8px), 5px);
+  padding: .5rem .8rem;
+  cursor: pointer;
+}
+
+.latch::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--text-muted) 35%, transparent);
+  transition: background .2s, box-shadow .2s;
+}
+
+.latch[aria-pressed="true"] {
+  color: var(--text);
+}
+
+.latch[aria-pressed="true"]::before {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+}
+
+/* explode lever: a knurled slide control with detent ticks */
+.lever {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  min-width: 0;
+}
+
+.lever-label {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.lever input {
+  flex: 1;
+  min-width: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  height: 30px;
+  background: transparent;
+  cursor: grab;
+  margin: 0;
+}
+
+.lever input:active {
+  cursor: grabbing;
+}
+
+.lever input::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background:
+    repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 10%),
+    var(--surface-alt);
+}
+
+.lever input::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 34px;
+  height: 24px;
+  margin-top: -8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--key-side-accent) 70%, transparent);
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .2) 0 2px, transparent 2px 6px),
+    var(--accent);
+  box-shadow: 0 var(--key-travel) 0 var(--key-side-accent);
+  transition: box-shadow .15s var(--ease);
+}
+
+.lever input:active::-webkit-slider-thumb {
+  box-shadow: 0 1px 0 var(--key-side-accent);
+}
+
+.lever input::-moz-range-track {
+  height: 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background:
+    repeating-linear-gradient(90deg, var(--border) 0 1px, transparent 1px 10%),
+    var(--surface-alt);
+}
+
+.lever input::-moz-range-thumb {
+  width: 34px;
+  height: 24px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, var(--key-side-accent) 70%, transparent);
+  background:
+    repeating-linear-gradient(90deg, rgba(0, 0, 0, .2) 0 2px, transparent 2px 6px),
+    var(--accent);
+  box-shadow: 0 var(--key-travel) 0 var(--key-side-accent);
+}
+
+.lever input:active::-moz-range-thumb {
+  box-shadow: 0 1px 0 var(--key-side-accent);
+}
+
+/* ============================================================
+   CALLOUTS — the shared "exploded assembly drawing" label chip,
+   used by the workshop's 3D viewer and the exploded project cards.
+   ============================================================ */
+.callout {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .64rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px dashed var(--accent);
+  border-radius: 6px;
+  padding: .22rem .5rem;
+}
+
+/* drei <Html> wrapper around each 3D callout — fades with the explode lever
+   and never intercepts orbit drags */
+.callout-3d,
+.callout-3d * {
+  pointer-events: none !important;
+}
+
+.callout-3d {
+  opacity: 0;
+  transition: opacity .35s var(--ease);
+}
+
+.callout-3d.on {
+  opacity: 1;
+}
+
+/* ============================================================
+   EXPLODED PROJECT CARDS
+   Click a card and its content separates into layers along Z —
+   the same assembly-drawing language as the workshop viewer,
+   posed per theme via the --xv-* tokens.
+   ============================================================ */
+.card {
+  cursor: pointer;
+}
+
+.card .stack {
+  transform-style: preserve-3d;
+  transition: transform calc(var(--dur) * 1.3) var(--ease);
+}
+
+.card .layer {
+  position: relative;
+  border: 1px solid transparent;
+  border-radius: max(calc(var(--radius) - 8px), 6px);
+  transition: transform calc(var(--dur) * 1.3) var(--ease),
+    background .35s var(--ease), border-color .35s var(--ease),
+    box-shadow .35s var(--ease), padding .35s var(--ease);
+}
+
+/* numbered callout chip + dashed leader, revealed when exploded */
+.card .layer::after {
+  content: attr(data-part);
+  position: absolute;
+  top: -.68rem;
+  right: .55rem;
+  z-index: 1;
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  border: 1px dashed var(--accent);
+  border-radius: 6px;
+  padding: .18rem .45rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s var(--ease);
+}
+
+.card .layer::before {
+  content: "";
+  position: absolute;
+  top: -.68rem;
+  right: 2rem;
+  height: .68rem;
+  width: 0;
+  border-left: 1px dashed var(--accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .35s var(--ease);
+}
+
+.card.exploded {
+  overflow: visible;
+  z-index: 7;
+  perspective: 900px;
+}
+
+.card.exploded .glare {
+  display: none;
+}
+
+.card.exploded .stack {
+  transform: translateY(var(--xv-shift)) rotateX(var(--xv-rx)) rotateZ(var(--xv-rz)) scale(var(--xv-scale));
+}
+
+/* Each layer lifts off the assembly plane along Z. The "- 2" centers the
+   spread on the middle layer (5 layers, 0..4), so the stack separates
+   symmetrically around the card instead of flying off one edge. */
+.card.exploded .layer {
+  transform: translateZ(calc((var(--z, 2) - 2) * var(--xv-gap)));
+  background: var(--surface);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+  box-shadow:
+    0 1px 0 color-mix(in srgb, var(--text) 14%, transparent),
+    0 30px 50px -24px rgba(0, 0, 0, .65);
+  padding: .55rem .7rem;
+  /* quick cascade as the parts separate */
+  transition-delay: calc((4 - var(--z, 2)) * 28ms);
+}
+
+.card.exploded .layer::after,
+.card.exploded .layer::before {
+  opacity: 1;
+}
+
+/* the corner toggle: a small latching key whose icon is itself a
+   three-plate stack that separates when engaged */
+.x-toggle {
+  position: absolute;
+  top: .55rem;
+  right: .55rem;
+  z-index: 8;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 26px;
+  padding: 0;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.x-toggle:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.x-icon {
+  display: grid;
+  gap: 2.5px;
+}
+
+.x-icon i {
+  display: block;
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform .3s var(--ease);
+}
+
+.x-toggle[aria-pressed="true"] .x-icon i:first-child {
+  transform: translateY(-2.5px);
+}
+
+.x-toggle[aria-pressed="true"] .x-icon i:last-child {
+  transform: translateY(2.5px);
+}
+
+/* ============================================================
+   THE WORKSHOP — live CAD on a workbench: viewer stage + controls
+   on the left, the build's manifest (parts list) on the right.
+   ============================================================ */
+.bench {
+  display: grid;
+  grid-template-columns: 1.65fr 1fr;
+  gap: 1.4rem;
+  align-items: stretch;
+}
+
+.bench-stage {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.bench-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: .65rem 1rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-mono);
+}
+
+.bench-title {
+  font-size: .78rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.bench-badge {
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  white-space: nowrap;
+}
+
+.bench-canvas {
+  position: relative;
+  height: 400px;
+}
+
+[data-theme="minimal"] .bench-canvas {
+  background: radial-gradient(420px 260px at 50% 0%, rgba(115, 107, 251, .07), transparent 70%);
+}
+
+[data-theme="technical"] .bench-canvas {
+  background-image: linear-gradient(rgba(32, 214, 196, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(32, 214, 196, .06) 1px, transparent 1px);
+  background-size: 36px 36px;
+}
+
+[data-theme="creative"] .bench-canvas {
+  background:
+    radial-gradient(300px 300px at 12% 10%, rgba(255, 61, 154, .18), transparent 60%),
+    radial-gradient(300px 300px at 88% 85%, rgba(34, 230, 224, .16), transparent 60%);
+}
+
+.bench-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .7rem 1rem;
+  border-top: 1px solid var(--border);
+  background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+}
+
+.bench-skeleton {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.bench-manifest {
+  display: flex;
+  flex-direction: column;
+  gap: .9rem;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.bench-manifest h3 {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  letter-spacing: var(--tracking);
+  font-size: 1.4rem;
+}
+
+.bench-manifest>p {
+  font-size: .92rem;
+  color: var(--text-muted);
+}
+
+.manifest-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: .78rem;
+  max-height: 240px;
+  overflow: auto;
+}
+
+.manifest-list li {
+  display: flex;
+  gap: .7rem;
+  padding: .32rem 0;
+  border-bottom: 1px dashed var(--border);
+}
+
+.manifest-list .idx {
+  color: var(--accent);
+}
+
+.manifest-note {
+  margin-top: auto;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+}
+
+.bench-rail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
 /* entrance animation (re-fires on theme change, see ThemeProvider).
    Uses `translate` — not `transform` — so the forwards fill never overrides
    framer-motion's inline transforms (tilt, drag, magnetic). */
@@ -1037,5 +1654,20 @@ html.js .reveal.seen {
 
   .grid {
     grid-template-columns: 1fr
+  }
+
+  .bench {
+    grid-template-columns: 1fr
+  }
+
+  .bench-canvas {
+    height: 320px
+  }
+
+  /* single column leaves less air around an exploded card
+     (matches the :root[data-theme] specificity of the token blocks) */
+  :root[data-theme] {
+    --xv-gap: 56px;
+    --xv-rx: 26deg;
   }
 }
