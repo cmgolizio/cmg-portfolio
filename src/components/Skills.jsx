@@ -43,7 +43,7 @@ export default function Skills() {
         <span className='idx'>03</span>
         <h2>The toolkit</h2>
         {draggable && (
-          <span className='sec-note'>psst — they’re flickable</span>
+          <span className='sec-note'>pssst — try pulling them</span>
         )}
       </div>
       <div className='skills'>

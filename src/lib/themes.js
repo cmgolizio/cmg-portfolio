@@ -16,7 +16,7 @@ export const themeIds = themeList.map((t) => t.id);
 
 // Second hero line, per theme.
 export const heroWords = {
-  minimal: "In code.",
-  technical: "In systems.",
-  creative: "In anything.",
+  minimal: "in code.",
+  technical: "in systems.",
+  creative: "in anything.",
 };

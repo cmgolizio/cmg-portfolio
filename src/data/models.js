@@ -11,4 +11,12 @@ export const models = [
       "A bedside lamp with a twist — literally. Turning the cube-shaped lamp shade turns the light on and off.",
     material: "Fusion 360 → glTF",
   },
+  {
+    slug: "sunglass-organizer",
+    name: "Sunglass Organizer (woodworking)",
+    file: "/models/sunglass-organizer.glb",
+    blurb:
+      "A stylish way to store your sunglasses. The organizer features metal dowels for hanging sunglasses.",
+    material: "Fusion 360 → glTF",
+  },
 ];

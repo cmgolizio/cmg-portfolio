@@ -46,12 +46,6 @@
   --key-travel: 2px;
   --key-side: #c9bfab;
   --key-side-accent: #5550c2;
-  /* exploded card pose: a calm, shallow drafting angle */
-  --xv-rx: 30deg;
-  --xv-rz: 0deg;
-  --xv-gap: 74px;
-  --xv-scale: .82;
-  --xv-shift: 0px;
 }
 
 :root[data-theme="technical"] {
@@ -81,12 +75,6 @@
   --key-travel: 3px;
   --key-side: #05080f;
   --key-side-accent: #0e8a7e;
-  /* exploded card pose: steep, like a drawing pinned to a drafting table */
-  --xv-rx: 36deg;
-  --xv-rz: 0deg;
-  --xv-gap: 82px;
-  --xv-scale: .8;
-  --xv-shift: 0px;
 }
 
 :root[data-theme="creative"] {
@@ -118,12 +106,6 @@
   --key-travel: 5px;
   --key-side: #4c1284;
   --key-side-accent: #c22573;
-  /* exploded card pose: shallow and jaunty */
-  --xv-rx: 26deg;
-  --xv-rz: -6deg;
-  --xv-gap: 78px;
-  --xv-scale: .82;
-  --xv-shift: 0px;
 }
 
 /* default before JS / for the very first paint */
@@ -1294,9 +1276,12 @@ footer .muted a:hover {
 
 /* ============================================================
    EXPLODED PROJECT CARDS
-   Click a card and its content separates into layers along Z —
-   the same assembly-drawing language as the workshop viewer,
-   posed per theme via the --xv-* tokens.
+   Click a card and its five sections lift off and regroup into a
+   large, illuminated grid in the center of a darkened screen.
+   The collapsed card below keeps its normal stacked layout; the
+   exploded grid is rendered in a body-level portal (.xv-* rules)
+   so it floats above everything. Click the veil or press Esc to
+   send the sections home.
    ============================================================ */
 .card {
   cursor: pointer;
@@ -1351,38 +1336,173 @@ footer .muted a:hover {
   transition: opacity .35s var(--ease);
 }
 
-.card.exploded {
+/* ---- the exploded view: a body-portal overlay that floats the sections
+   into the center of a darkened screen ---- */
+
+/* the dark veil over the whole site; clicking it sends the sections home */
+.xv-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 5vmin, 4rem);
+  overflow: hidden;
+  /* an accent spotlight behind the grid, a vignette in the corners, on dark */
+  background:
+    radial-gradient(120% 75% at 50% 42%,
+      color-mix(in srgb, var(--accent) 13%, transparent) 0%, transparent 58%),
+    radial-gradient(150% 130% at 50% 50%,
+      transparent 52%, rgba(0, 0, 0, .55) 100%),
+    rgba(5, 7, 14, .85);
+  backdrop-filter: blur(3px) saturate(1.1);
+  -webkit-backdrop-filter: blur(3px) saturate(1.1);
+  cursor: pointer;
+}
+
+/* the five sections, regrouped into the center. Keeps .card so each section
+   renders exactly as it does on the card; the card's own chrome is stripped
+   back to a bare grid so only the sections read as tiles. */
+.xv-grid {
+  width: min(1000px, 100%);
+  max-height: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "title title"
+    "desc  img"
+    "stack links";
+  gap: clamp(.6rem, 1.6vmin, 1.1rem);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
   overflow: visible;
-  z-index: 7;
-  perspective: 900px;
+  cursor: default;
 }
 
-.card.exploded .glare {
-  display: none;
-}
-
-.card.exploded .stack {
-  transform: translateY(var(--xv-shift)) rotateX(var(--xv-rx)) rotateZ(var(--xv-rz)) scale(var(--xv-scale));
-}
-
-/* Each layer lifts off the assembly plane along Z. The "- 2" centers the
-   spread on the middle layer (5 layers, 0..4), so the stack separates
-   symmetrically around the card instead of flying off one edge. */
-.card.exploded .layer {
-  transform: translateZ(calc((var(--z, 2) - 2) * var(--xv-gap)));
-  background: var(--surface);
-  border-color: color-mix(in srgb, var(--accent) 28%, var(--border));
+/* every section lifts off the veil as a glowing, glassy tile */
+.xv-grid .layer {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  padding: 1.2rem 1.35rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 50%, var(--border));
+  border-radius: max(calc(var(--radius) - 2px), 12px);
+  background:
+    linear-gradient(157deg,
+      color-mix(in srgb, var(--surface) 88%, #fff 12%) 0%,
+      var(--surface) 50%,
+      color-mix(in srgb, var(--surface) 86%, var(--accent) 14%) 100%);
   box-shadow:
-    0 1px 0 color-mix(in srgb, var(--text) 14%, transparent),
-    0 30px 50px -24px rgba(0, 0, 0, .65);
-  padding: .55rem .7rem;
-  /* quick cascade as the parts separate */
-  transition-delay: calc((4 - var(--z, 2)) * 28ms);
+    inset 0 1px 0 color-mix(in srgb, #fff 26%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent),
+    0 0 44px -10px color-mix(in srgb, var(--accent) 62%, transparent),
+    0 30px 60px -28px rgba(0, 0, 0, .85);
+  transition: box-shadow .3s var(--ease), border-color .3s var(--ease);
 }
 
-.card.exploded .layer::after,
-.card.exploded .layer::before {
-  opacity: 1;
+/* hovering a tile lifts it (a framer spring) and pushes its glow brighter */
+.xv-grid .layer:hover {
+  border-color: var(--accent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 32%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent),
+    0 0 60px -8px color-mix(in srgb, var(--accent) 82%, transparent),
+    0 36px 72px -30px rgba(0, 0, 0, .9);
+}
+
+/* top row: title — middle row: description, image — bottom row: stack, links */
+.xv-grid .layer:nth-child(1) {
+  grid-area: img;
+}
+
+.xv-grid .layer:nth-child(2) {
+  grid-area: title;
+  align-items: center;
+  text-align: center;
+}
+
+.xv-grid .layer:nth-child(3) {
+  grid-area: desc;
+}
+
+.xv-grid .layer:nth-child(4) {
+  grid-area: stack;
+}
+
+.xv-grid .layer:nth-child(5) {
+  grid-area: links;
+}
+
+/* let the image fill its taller cell and the title grow for the larger stage */
+.xv-grid .thumb {
+  height: auto;
+  flex: 1 1 auto;
+  min-height: 190px;
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, transparent);
+  box-shadow: inset 0 0 44px -12px color-mix(in srgb, var(--accent) 55%, transparent);
+}
+
+.xv-grid h3 {
+  margin: 0;
+  font-size: clamp(1.6rem, 2.8vw, 2.5rem);
+  line-height: 1.05;
+  background: linear-gradient(118deg,
+      var(--text), color-mix(in srgb, var(--accent) 75%, var(--text)));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.xv-grid p {
+  min-height: 0;
+  margin: 0;
+}
+
+.xv-grid .tags {
+  margin: 0;
+  justify-content: center;
+}
+
+/* links become centered pills for a more finished footer row */
+.xv-grid .links {
+  justify-content: center;
+  gap: .7rem;
+}
+
+.xv-grid .links a {
+  padding: .5rem .95rem;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  transition: background .2s var(--ease), border-color .2s var(--ease),
+    transform .2s var(--ease);
+}
+
+.xv-grid .links a:hover {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  transform: translateY(-1px);
+}
+
+/* small screens: stack everything into a single column */
+@media (max-width: 640px) {
+  .xv-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "title"
+      "img"
+      "desc"
+      "stack"
+      "links";
+  }
+
+  .xv-grid .thumb {
+    min-height: 150px;
+  }
 }
 
 /* the corner toggle: a small latching key whose icon is itself a
@@ -1662,12 +1782,5 @@ html.js .reveal.seen {
 
   .bench-canvas {
     height: 320px
-  }
-
-  /* single column leaves less air around an exploded card
-     (matches the :root[data-theme] specificity of the token blocks) */
-  :root[data-theme] {
-    --xv-gap: 56px;
-    --xv-rx: 26deg;
   }
 }
