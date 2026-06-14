@@ -8,9 +8,9 @@ export default function Home() {
   return (
     <main className='wrap' id='app'>
       <Hero />
+      <Skills />
       <Projects />
       <Workshop />
-      <Skills />
       <Footer />
     </main>
   );

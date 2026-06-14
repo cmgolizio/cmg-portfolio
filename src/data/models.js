@@ -4,11 +4,11 @@
 
 export const models = [
   {
-    slug: "lamp-cam",
-    name: "Cam Lamp",
-    file: "/models/lamp-cam.glb",
+    slug: "lamp-cubey",
+    name: "Cubey Lamp",
+    file: "/models/cubey-lamp.glb",
     blurb:
-      "A bedside lamp with a twist — literally. Turning the knob spins an eccentric cam, and a follower rod riding its edge tilts the shade. No springs, no electronics in the linkage: just one cam doing all the work.",
+      "A bedside lamp with a twist — literally. Turning the cube-shaped lamp shade turns the light on and off.",
     material: "Fusion 360 → glTF",
   },
 ];
