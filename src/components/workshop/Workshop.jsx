@@ -159,9 +159,10 @@ export default function Workshop() {
             </ol>
           )}
           <p className='manifest-note'>
-            modeled in Fusion 360 · exported as glTF · rendered live in your
-            browser
+            modeled in Fusion 360 <span className='text-xl'>→</span> rendered
+            live in your browser
           </p>
+          <p className='manifest-note'>3D Models:</p>
           {models.length > 1 && (
             <div className='bench-rail' role='group' aria-label='Models'>
               {models.map((m, i) => (
