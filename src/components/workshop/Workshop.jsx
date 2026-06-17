@@ -52,6 +52,9 @@ export default function Workshop() {
   // reduced motion. Latching it on is an explicit opt back in.
   const [userSpin, setUserSpin] = useState(null);
   const [parts, setParts] = useState([]);
+  const [partHovered, setPartHovered] = useState(false);
+  const [selectedIdx, setSelectedIdx] = useState(null);
+  const selectedRef = useRef(null);
 
   const spinning = userSpin ?? !reduceMotion;
   const model = models[activeIdx];
@@ -81,10 +84,20 @@ export default function Workshop() {
   // with your hand.
   const onGrab = useCallback(() => setUserSpin(false), []);
 
+  // When a part is clicked in the viewer, bring its name into view in the
+  // manifest list. block:"nearest" only scrolls when it's actually off-screen,
+  // which is exactly the edge case to handle for parts-dense models.
+  useEffect(() => {
+    if (selectedIdx === null) return;
+    selectedRef.current?.scrollIntoView({ block: "nearest" });
+  }, [selectedIdx]);
+
   const pickModel = (i) => {
     setActiveIdx(i);
     setExplode(0);
     setParts([]);
+    setPartHovered(false);
+    setSelectedIdx(null);
   };
 
   return (
@@ -98,7 +111,12 @@ export default function Workshop() {
       <div className='bench reveal d2'>
         <div className='bench-stage'>
           <div className='bench-bar'>
-            <span className='bench-title'>{model.name}</span>
+            <span className='bench-title-group'>
+              <span className='bench-title'>{model.name}</span>
+              {partHovered && (
+                <span className='bench-hint'>click for part name</span>
+              )}
+            </span>
             <span className='bench-badge'>{model.material}</span>
           </div>
           <div className='bench-canvas' ref={stageRef}>
@@ -110,6 +128,8 @@ export default function Workshop() {
                   spinning={spinning}
                   onParts={onParts}
                   onGrab={onGrab}
+                  onHoverChange={setPartHovered}
+                  onSelect={setSelectedIdx}
                 />
               </ViewerBoundary>
             ) : (
@@ -151,7 +171,12 @@ export default function Workshop() {
           {parts.length > 0 && (
             <ol className='manifest-list' aria-label='Parts'>
               {parts.map((name, i) => (
-                <li key={`${name}-${i}`}>
+                <li
+                  key={`${name}-${i}`}
+                  ref={i === selectedIdx ? selectedRef : null}
+                  className={i === selectedIdx ? "is-selected" : undefined}
+                  aria-current={i === selectedIdx ? "true" : undefined}
+                >
                   <span className='idx'>{String(i + 1).padStart(2, "0")}</span>
                   {name}
                 </li>

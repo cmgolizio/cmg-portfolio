@@ -1,7 +1,7 @@
 "use no memo";
 "use client";
 
-import { Suspense, useEffect, useMemo, useRef } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
   Html,
@@ -14,18 +14,21 @@ import * as THREE from "three";
 // The workshop's 3D viewport. Loads a glTF assembly (a Fusion 360 export),
 // normalizes it to a fixed size, and explodes it like an assembly drawing:
 // every top-level component slides outward from the assembly's center by
-// `explode` (0..1), with numbered callouts labeled from the glTF node names.
+// `explode` (0..1). The viewport is too small for floating 3D labels, so
+// parts carry no label here: hovering a part flags it (pointer cursor + a
+// hint in the bench bar) and clicking it reports the part up so the manifest
+// list on the right can highlight (and scroll to) that part's name.
 // React Compiler is opted out above — parts are mutated per-frame in useFrame.
 
 const FIT_RADIUS = 1.7; // model is scaled so its bounding radius is this
-const SPREAD = 0.6; // explode distance at 1, as a fraction of the raw radius
+const SPREAD = 1.15; // explode distance at 1, as a fraction of the raw radius
 const SPIN_SPEED = 0.3; // rad/s turntable
 
 // "Rocker_Arm:1" (glTF-sanitized Fusion names) -> "Rocker Arm"
 const cleanName = (name, i) =>
   name.replace(/[_.]/g, " ").replace(/:\d+$/, "").trim() || `Part ${i + 1}`;
 
-function Assembly({ file, explode, spinning, onParts }) {
+function Assembly({ file, explode, spinning, onParts, onHover, onSelect }) {
   const { scene } = useGLTF(file);
   const spinRef = useRef(null);
   const current = useRef(0); // damped explode value chasing the prop
@@ -88,8 +91,10 @@ function Assembly({ file, explode, spinning, onParts }) {
     }
     // Ease the parts toward the lever's value; keep requesting frames
     // (frameloop is "demand" when the turntable is off) until settled.
+    // lambda 7 keeps the settle time close to the card's spring (~0.4s)
+    // so the two explode interactions feel like siblings, not just similar
     const target = explode;
-    const next = THREE.MathUtils.damp(current.current, target, 6, delta);
+    const next = THREE.MathUtils.damp(current.current, target, 7, delta);
     if (Math.abs(next - target) > 0.001) invalidate();
     current.current = Math.abs(next - target) <= 0.001 ? target : next;
     for (const p of layout.parts) {
@@ -99,7 +104,66 @@ function Assembly({ file, explode, spinning, onParts }) {
     }
   });
 
-  const showCallouts = explode > 0.2;
+  // Hit-test against the part meshes directly (rather than turning each
+  // part into its own JSX node) so the glTF's own scene graph — and any
+  // transform baked into its root — stays exactly as exported.
+  const gl = useThree((s) => s.gl);
+  const camera = useThree((s) => s.camera);
+  useEffect(() => {
+    const canvas = gl.domElement;
+    const ray = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    let lastHover = null;
+    let downPos = null;
+
+    const hitIndex = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      ray.setFromCamera(ndc, camera);
+      const hits = ray.intersectObjects(
+        layout.parts.map((p) => p.child),
+        true,
+      );
+      if (!hits.length) return null;
+      let obj = hits[0].object;
+      while (obj && !layout.parts.some((p) => p.child === obj))
+        obj = obj.parent;
+      return obj ? layout.parts.findIndex((p) => p.child === obj) : null;
+    };
+
+    const onMove = (e) => {
+      const idx = hitIndex(e);
+      if (idx === lastHover) return;
+      lastHover = idx;
+      canvas.style.cursor = idx !== null ? "pointer" : "";
+      onHover(idx);
+    };
+    // OrbitControls still fires a native "click" after a drag-to-orbit
+    // release; only treat it as a selection if the pointer barely moved.
+    const onDown = (e) => {
+      downPos = { x: e.clientX, y: e.clientY };
+    };
+    const onClickCanvas = (e) => {
+      if (downPos) {
+        const dx = e.clientX - downPos.x;
+        const dy = e.clientY - downPos.y;
+        if (dx * dx + dy * dy > 36) return;
+      }
+      const idx = hitIndex(e);
+      onSelect(idx !== null ? (cur) => (cur === idx ? null : idx) : null);
+    };
+
+    canvas.addEventListener("pointermove", onMove);
+    canvas.addEventListener("pointerdown", onDown);
+    canvas.addEventListener("click", onClickCanvas);
+    return () => {
+      canvas.removeEventListener("pointermove", onMove);
+      canvas.removeEventListener("pointerdown", onDown);
+      canvas.removeEventListener("click", onClickCanvas);
+      canvas.style.cursor = "";
+    };
+  }, [gl, camera, layout, onHover, onSelect]);
 
   return (
     <>
@@ -107,22 +171,6 @@ function Assembly({ file, explode, spinning, onParts }) {
         <group scale={layout.scale}>
           <group position={layout.center.clone().negate()}>
             <primitive object={scene} />
-            {layout.parts.map((p, i) => (
-              <Html
-                key={p.name + i}
-                position={p.anchor
-                  .clone()
-                  .addScaledVector(p.dir, explode * layout.spread)}
-                center
-                distanceFactor={7}
-                zIndexRange={[20, 0]}
-                wrapperClass={`callout-3d${showCallouts ? " on" : ""}`}
-              >
-                <span className='callout'>
-                  {String(i + 1).padStart(2, "0")} · {p.name}
-                </span>
-              </Html>
-            ))}
           </group>
         </group>
       </group>
@@ -169,7 +217,15 @@ export default function ModelViewer({
   spinning,
   onParts,
   onGrab,
+  onHoverChange,
+  onSelect,
 }) {
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  useEffect(() => {
+    onHoverChange?.(hoveredIdx !== null);
+  }, [hoveredIdx, onHoverChange]);
+
   return (
     <Canvas
       frameloop={spinning ? "always" : "demand"}
@@ -195,6 +251,8 @@ export default function ModelViewer({
           explode={explode}
           spinning={spinning}
           onParts={onParts}
+          onHover={setHoveredIdx}
+          onSelect={onSelect}
         />
       </Suspense>
       <OrbitControls

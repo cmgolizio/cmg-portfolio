@@ -1268,35 +1268,32 @@ footer .muted a:hover {
 /* ============================================================
    CALLOUTS — the shared "exploded assembly drawing" label chip,
    used by the workshop's 3D viewer and the exploded project cards.
+   One set of custom properties so the two can't drift apart again.
    ============================================================ */
-.callout {
-  display: inline-block;
+:root {
+  --callout-bg: color-mix(in srgb, var(--surface) 86%, transparent);
+  --callout-border: 1px dashed var(--accent);
+  --callout-fs: .64rem;
+  --callout-tracking: .07em;
+  --callout-padding: .22rem .5rem;
+}
+
+.callout,
+.card .layer::after {
   font-family: var(--font-mono);
-  font-size: .64rem;
-  letter-spacing: .07em;
+  font-size: var(--callout-fs);
+  letter-spacing: var(--callout-tracking);
   text-transform: uppercase;
   white-space: nowrap;
   color: var(--accent);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  border: 1px dashed var(--accent);
+  background: var(--callout-bg);
+  border: var(--callout-border);
   border-radius: 6px;
-  padding: .22rem .5rem;
+  padding: var(--callout-padding);
 }
 
-/* drei <Html> wrapper around each 3D callout — fades with the explode lever
-   and never intercepts orbit drags */
-.callout-3d,
-.callout-3d * {
-  pointer-events: none !important;
-}
-
-.callout-3d {
-  opacity: 0;
-  transition: opacity .35s var(--ease);
-}
-
-.callout-3d.on {
-  opacity: 1;
+.callout {
+  display: inline-block;
 }
 
 /* ============================================================
@@ -1326,36 +1323,15 @@ footer .muted a:hover {
     box-shadow .35s var(--ease), padding .35s var(--ease);
 }
 
-/* numbered callout chip + dashed leader, revealed when exploded */
+/* numbered callout chip, revealed when exploded — same chip language as
+   the workshop's 3D callouts (.callout), no leader: the chip itself is
+   the label, same as a part chip sitting at its part's position. */
 .card .layer::after {
   content: attr(data-part);
   position: absolute;
   top: -.68rem;
   right: .55rem;
   z-index: 1;
-  font-family: var(--font-mono);
-  font-size: .6rem;
-  letter-spacing: .07em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  border: 1px dashed var(--accent);
-  border-radius: 6px;
-  padding: .18rem .45rem;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity .35s var(--ease);
-}
-
-.card .layer::before {
-  content: "";
-  position: absolute;
-  top: -.68rem;
-  right: 2rem;
-  height: .68rem;
-  width: 0;
-  border-left: 1px dashed var(--accent);
   opacity: 0;
   pointer-events: none;
   transition: opacity .35s var(--ease);
@@ -1607,10 +1583,25 @@ footer .muted a:hover {
   font-family: var(--font-mono);
 }
 
+.bench-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: .6rem;
+}
+
 .bench-title {
   font-size: .78rem;
   letter-spacing: .1em;
   text-transform: uppercase;
+}
+
+/* shown only while hovering a part — small and subtle, never competes
+   with the title it sits next to */
+.bench-hint {
+  font-size: .68rem;
+  letter-spacing: .04em;
+  color: var(--text-muted);
+  opacity: .75;
 }
 
 .bench-badge {
@@ -1703,6 +1694,17 @@ footer .muted a:hover {
 
 .manifest-list .idx {
   color: var(--accent);
+}
+
+/* the part clicked in the 3D viewer lights up its row in the manifest */
+.manifest-list li.is-selected {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  border-radius: max(calc(var(--radius) - 8px), 4px);
+  box-shadow: inset 2px 0 0 var(--accent);
+  padding-left: .5rem;
+  padding-right: .5rem;
+  margin: 0 -.5rem;
 }
 
 .manifest-note {
