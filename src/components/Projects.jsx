@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { projects } from "@/data/projects";
 import TiltCard from "@/components/TiltCard";
+import { explodeSound, assembleSound } from "@/lib/clicker";
 
 const DELAYS = ["d2", "d3", "d4"];
 
@@ -130,17 +131,17 @@ function ProjectCard({ project, delay }) {
     () => false,
   );
   const reduceMotion = useReducedMotion();
-  const toggleRef = useRef(null);
   const overlayRef = useRef(null);
 
-  // While exploded: focus the overlay, Esc dismisses, the page underneath
-  // can't scroll, and focus returns to the toggle once the card is back.
+  // While exploded: focus the overlay, Esc dismisses, the page underneath can't scroll.
   useEffect(() => {
     if (!exploded) return;
-    const toggle = toggleRef.current;
     overlayRef.current?.focus();
     const onKey = (e) => {
-      if (e.key === "Escape") setExploded(false);
+      if (e.key === "Escape") {
+        assembleSound();
+        setExploded(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -148,17 +149,18 @@ function ProjectCard({ project, delay }) {
     return () => {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
-      toggle?.focus();
     };
   }, [exploded]);
 
-  // Clicks on a link/button never toggle the view.
+  // Clicks on a link never toggle the view.
   const onCardClick = (e) => {
-    if (e.target.closest("a, button")) return;
+    if (e.target.closest("a")) return;
+    explodeSound();
     setExploded(true);
   };
   const onBackdropClick = (e) => {
-    if (e.target.closest("a, button")) return;
+    if (e.target.closest("a")) return;
+    assembleSound();
     setExploded(false);
   };
 
@@ -170,22 +172,6 @@ function ProjectCard({ project, delay }) {
         inert={exploded || undefined}
         onClick={onCardClick}
       >
-        <button
-          ref={toggleRef}
-          type='button'
-          className='x-toggle'
-          aria-pressed={exploded}
-          aria-label={`Exploded view of ${project.name}`}
-          title='Exploded view'
-          onClick={() => setExploded(true)}
-        >
-          {/* mini stack that separates when latched — the icon demos the move */}
-          <span aria-hidden='true' className='x-icon'>
-            <i />
-            <i />
-            <i />
-          </span>
-        </button>
         <div className='stack'>
           <CardSections project={project} />
         </div>

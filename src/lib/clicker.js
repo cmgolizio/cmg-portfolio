@@ -102,3 +102,44 @@ export function ratchetSound() {
   if (!ensure()) return;
   tick({ freq: 2100, dur: 0.008, gain: 0.03 });
 }
+
+// Card sections scatter apart — each theme sounds like its own kind of mechanism opening.
+export function explodeSound() {
+  if (!ensure()) return;
+  const theme = document.documentElement.getAttribute("data-theme");
+  if (theme === "technical") {
+    // Three stepped decoupling ticks, then a rising square-wave sweep
+    tick({ freq: 2200, dur: 0.01, gain: 0.06 });
+    setTimeout(() => tick({ freq: 2900, dur: 0.009, gain: 0.048 }), 28);
+    setTimeout(() => tick({ freq: 3600, dur: 0.008, gain: 0.038 }), 56);
+    blip({ freq: 780, end: 1350, dur: 0.1, type: "square", gain: 0.012 });
+  } else if (theme === "creative") {
+    // Bouncy upward glide + contact burst
+    blip({ freq: 300, end: 680, dur: 0.16, gain: 0.055 });
+    tick({ freq: 1800, dur: 0.014, gain: 0.035 });
+  } else {
+    // Minimal: soft thud + gentle rise
+    tick({ freq: 1100, dur: 0.015, gain: 0.04 });
+    blip({ freq: 190, end: 440, dur: 0.14, gain: 0.038 });
+  }
+}
+
+// Card sections click back into place — a settling, satisfying resolution.
+export function assembleSound() {
+  if (!ensure()) return;
+  const theme = document.documentElement.getAttribute("data-theme");
+  if (theme === "technical") {
+    // Descending square blip, then two crisp ticks locking in
+    blip({ freq: 1200, end: 580, dur: 0.09, type: "square", gain: 0.014 });
+    setTimeout(() => tick({ freq: 3100, dur: 0.01, gain: 0.055 }), 65);
+    setTimeout(() => tick({ freq: 2500, dur: 0.01, gain: 0.04 }), 95);
+  } else if (theme === "creative") {
+    // Playful descend + a small bounce-back blip
+    blip({ freq: 580, end: 270, dur: 0.16, gain: 0.05 });
+    setTimeout(() => blip({ freq: 360, end: 480, dur: 0.08, gain: 0.03 }), 80);
+  } else {
+    // Minimal: smooth descend, a quiet click to finish
+    blip({ freq: 420, end: 195, dur: 0.12, gain: 0.04 });
+    setTimeout(() => tick({ freq: 950, dur: 0.016, gain: 0.036 }), 85);
+  }
+}

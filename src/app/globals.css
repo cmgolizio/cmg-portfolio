@@ -1122,7 +1122,6 @@ footer .muted a:hover {
 .btn,
 .switcher button,
 .palette-hint,
-.x-toggle,
 .latch,
 .copy-email .copy-state {
   --side: var(--key-side);
@@ -1134,7 +1133,6 @@ footer .muted a:hover {
 .btn:hover,
 .switcher button:hover,
 .palette-hint:hover,
-.x-toggle:hover,
 .latch:hover {
   filter: brightness(1.06);
 }
@@ -1143,7 +1141,6 @@ footer .muted a:hover {
 .btn:active,
 .switcher button:active,
 .palette-hint:active,
-.x-toggle:active,
 .latch:active,
 .copy-email:active .copy-state {
   transform: translateY(var(--key-travel));
@@ -1164,8 +1161,7 @@ footer .muted a:hover {
 
 /* latching switches stay seated until toggled again */
 .switcher button[aria-pressed="true"],
-.latch[aria-pressed="true"],
-.x-toggle[aria-pressed="true"] {
+.latch[aria-pressed="true"] {
   transform: translateY(var(--key-travel));
   box-shadow: 0 0 0 var(--side), inset 0 2px 6px rgba(0, 0, 0, .26);
 }
@@ -1533,52 +1529,6 @@ footer .muted a:hover {
   .xv-grid .thumb {
     min-height: 150px;
   }
-}
-
-/* the corner toggle: a small latching key whose icon is itself a
-   three-plate stack that separates when engaged */
-.x-toggle {
-  position: absolute;
-  top: .55rem;
-  right: .55rem;
-  z-index: 8;
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 26px;
-  padding: 0;
-  color: var(--text-muted);
-  background: var(--surface-alt);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.x-toggle:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}
-
-.x-icon {
-  display: grid;
-  gap: 2.5px;
-}
-
-.x-icon i {
-  display: block;
-  width: 12px;
-  height: 2px;
-  border-radius: 1px;
-  background: currentColor;
-  transition: transform .3s var(--ease);
-}
-
-.x-toggle[aria-pressed="true"] .x-icon i:first-child {
-  transform: translateY(-2.5px);
-}
-
-.x-toggle[aria-pressed="true"] .x-icon i:last-child {
-  transform: translateY(2.5px);
 }
 
 /* ============================================================
