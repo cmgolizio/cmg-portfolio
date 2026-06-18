@@ -8,10 +8,13 @@ import {
   useTransform,
   useReducedMotion,
 } from "framer-motion";
+import { useDeviceTilt } from "@/lib/useDeviceTilt";
 
 // 3D-tilts toward the cursor with a theme-tinted glare that tracks it.
 // Falls back to a plain <article> for reduced-motion users; touch pointers
-// are ignored so mobile cards stay still.
+// are ignored so mobile cards stay still — UNLESS the visitor has enabled
+// device-orientation tilt (gyroscope), in which case physically tilting the
+// phone drives the same px/py motion values that the mouse normally feeds.
 // `frozen` springs the card flat and parks the tilt/lift — used while a
 // project card is in its exploded view, which owns the 3D pose instead.
 
@@ -34,10 +37,10 @@ export default function TiltCard({
   const sy = useSpring(py, SPRING);
   const rotateX = useTransform(sy, [0, 1], [TILT_RANGE, -TILT_RANGE]);
   const rotateY = useTransform(sx, [0, 1], [-TILT_RANGE, TILT_RANGE]);
-  // The glare element is 150% of the card, so ±22% of itself sweeps it
-  // roughly edge to edge.
   const glareX = useTransform(sx, [0, 1], ["-22%", "22%"]);
   const glareY = useTransform(sy, [0, 1], ["-22%", "22%"]);
+
+  const { x: tiltX, y: tiltY, enabled: tiltEnabled } = useDeviceTilt();
 
   // Settle flat if frozen mid-hover.
   useEffect(() => {
@@ -46,6 +49,27 @@ export default function TiltCard({
       py.set(0.5);
     }
   }, [frozen, px, py]);
+
+  // When device-orientation is active, feed tilt values into the same
+  // px/py motion values the mouse uses — the spring/transform pipeline
+  // downstream is completely unchanged.
+  useEffect(() => {
+    if (!tiltEnabled) return;
+    // Center first so there's no jump from a stale pointer position.
+    px.set(0.5);
+    py.set(0.5);
+    // tiltY fires after tiltX in each rAF, so tiltX is already current.
+    const unsub = tiltY.on("change", () => {
+      if (frozen) return;
+      px.set(tiltX.get() * 0.5 + 0.5);
+      py.set(tiltY.get() * 0.5 + 0.5);
+    });
+    return () => {
+      unsub();
+      px.set(0.5);
+      py.set(0.5);
+    };
+  }, [tiltEnabled, tiltX, tiltY, px, py, frozen]);
 
   if (reduceMotion)
     return (
@@ -61,6 +85,8 @@ export default function TiltCard({
     py.set((e.clientY - r.top) / r.height);
   };
   const reset = () => {
+    // Don't clobber orientation-driven tilt when a stray touch event leaves.
+    if (tiltEnabled) return;
     px.set(0.5);
     py.set(0.5);
   };

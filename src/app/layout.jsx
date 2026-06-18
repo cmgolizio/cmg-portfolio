@@ -15,7 +15,9 @@ import ThemeSwitcher from "@/components/ThemeSwitcher";
 import ThemeIntro from "@/components/ThemeIntro";
 import CommandPalette from "@/components/CommandPalette";
 import Atmosphere from "@/components/Atmosphere";
+import MotionPermission from "@/components/MotionPermission";
 import FluidCursor from "@/components/FluidCursor";
+// import CursorTrail from "@/components/CursorTrail";
 import ScrollReveals from "@/components/ScrollReveals";
 import Clicker from "@/components/Clicker";
 
@@ -95,7 +97,9 @@ export default function RootLayout({ children }) {
           <ThemeIntro />
           <CommandPalette />
           <Atmosphere />
+          <MotionPermission />
           <FluidCursor />
+          {/* <CursorTrail /> */}
           <ScrollReveals />
           <Clicker />
           {children}

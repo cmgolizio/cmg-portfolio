@@ -1,6 +1,7 @@
 "use client";
 
 import { useTheme } from "@/components/ThemeProvider";
+import HeroAssemble from "@/components/HeroAssemble";
 import HeroWord from "@/components/HeroWord";
 import Magnetic from "@/components/Magnetic";
 
@@ -11,8 +12,11 @@ export default function Hero() {
     <section className='hero'>
       <div className='hero-main'>
         <span className='eyebrow reveal d1'>Christopher Golizio · Builder</span>
-        <h1 className='reveal d2'>
-          I build things.
+        {/* HeroAssemble owns the h1 entrance; .reveal is not needed here.
+            Both HeroAssemble and HeroWord are keyed by themeId so they
+            remount and replay on every theme switch. */}
+        <h1>
+          <HeroAssemble key={themeId} themeId={themeId} />
           <br />
           <HeroWord themeId={themeId} />
         </h1>
