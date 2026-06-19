@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { projects } from "@/data/projects";
 import TiltCard from "@/components/TiltCard";
@@ -117,6 +118,9 @@ function CardSections({ project, animate = false }) {
           <a href={project.code} target='_blank' rel='noopener noreferrer'>
             Code ↗
           </a>
+          {project.caseStudy && (
+            <Link href={`/work/${project.slug}`}>Case study →</Link>
+          )}
         </div>
       </Tile>
     </>

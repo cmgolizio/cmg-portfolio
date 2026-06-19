@@ -1790,3 +1790,115 @@ html.js .reveal.seen {
     height: 320px
   }
 }
+
+/* ============================================================
+   CASE STUDY — long-form /work/[slug] reading page.
+   Reuses .wrap, .btn, .reveal; a centered measure for prose.
+   ============================================================ */
+.case {
+  max-width: 760px;
+  margin: 0 auto;
+  padding-top: clamp(4rem, 12vh, 7rem);
+}
+
+.case-back {
+  margin-bottom: 2.4rem;
+}
+
+.case-head {
+  margin-bottom: 2.4rem;
+}
+
+.case-status {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  padding: .25rem .55rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  margin-bottom: 1rem;
+}
+
+.case-head h1 {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(2.2rem, 6vw, 3.6rem);
+  line-height: 1.05;
+  letter-spacing: var(--tracking);
+  margin-bottom: .8rem;
+}
+
+.case-tagline {
+  font-size: clamp(1.05rem, 2.4vw, 1.3rem);
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* meta strip: role / timeline / stack */
+.case-meta {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 3rem;
+  padding: 1.2rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.case-meta dt {
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--accent);
+  margin-bottom: .4rem;
+}
+
+.case-meta dd {
+  font-size: .9rem;
+  color: var(--text);
+  line-height: 1.4;
+}
+
+.case-block {
+  margin-bottom: 2.6rem;
+}
+
+.case-block h2 {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  letter-spacing: var(--tracking);
+  margin-bottom: .9rem;
+}
+
+[data-theme="technical"] .case-block h2::before {
+  content: "// ";
+  color: var(--text-muted);
+}
+
+.case-block p {
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: var(--text-muted);
+}
+
+.case-cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 3.4rem;
+  padding-top: 2.4rem;
+  border-top: 1px solid var(--border);
+}
+
+@media(max-width:560px) {
+  .case-meta {
+    grid-template-columns: 1fr;
+    gap: 1.2rem;
+  }
+}
