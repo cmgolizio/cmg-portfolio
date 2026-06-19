@@ -103,9 +103,11 @@ export default function Workshop() {
   return (
     <section id='workshop' className='section-pad'>
       <div className='sec-head reveal d1'>
-        <span className='idx'>02</span>
+        <span className='idx'>03</span>
         <h2>The workshop</h2>
-        <span className='sec-note'>drag to orbit · pull the lever</span>
+        <span className='sec-note'>
+          drag to orbit · slide the bar to explode model
+        </span>
       </div>
 
       <div className='bench reveal d2'>

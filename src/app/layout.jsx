@@ -14,6 +14,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
 import ThemeIntro from "@/components/ThemeIntro";
 import CommandPalette from "@/components/CommandPalette";
+import ResumeViewer from "@/components/ResumeViewer";
 import Atmosphere from "@/components/Atmosphere";
 import MotionPermission from "@/components/MotionPermission";
 import FluidCursor from "@/components/FluidCursor";
@@ -96,6 +97,7 @@ export default function RootLayout({ children }) {
           <ThemeSwitcher />
           <ThemeIntro />
           <CommandPalette />
+          <ResumeViewer />
           <Atmosphere />
           <MotionPermission />
           <FluidCursor />

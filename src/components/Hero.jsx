@@ -4,9 +4,12 @@ import { useTheme } from "@/components/ThemeProvider";
 import HeroAssemble from "@/components/HeroAssemble";
 import HeroWord from "@/components/HeroWord";
 import Magnetic from "@/components/Magnetic";
+import { RESUME_OPEN_EVENT } from "@/data/resume";
 
 export default function Hero() {
   const { themeId } = useTheme();
+
+  const openResume = () => window.dispatchEvent(new Event(RESUME_OPEN_EVENT));
 
   return (
     <section className='hero'>
@@ -21,19 +24,24 @@ export default function Hero() {
           <HeroWord themeId={themeId} />
         </h1>
         <p className='lede reveal d3'>
-          Full-stack developer who builds with code, wood, plastic, circuits and
+          Fullstack developer who builds with code, wood, plastic, circuits and
           likes when they meet in the middle.
         </p>
         <div className='cta-row reveal d4'>
           <Magnetic>
             <a className='btn primary' href='#work'>
-              View the work
+              View my work
             </a>
           </Magnetic>
           <Magnetic>
             <a className='btn ghost' href='#contact'>
               Get in touch
             </a>
+          </Magnetic>
+          <Magnetic>
+            <button className='btn ghost' type='button' onClick={openResume}>
+              Resume
+            </button>
           </Magnetic>
         </div>
       </div>

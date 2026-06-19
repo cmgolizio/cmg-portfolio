@@ -40,11 +40,9 @@ export default function Skills() {
   return (
     <section id='skills' className='section-pad'>
       <div className='sec-head reveal d1'>
-        <span className='idx'>03</span>
-        <h2>The toolkit</h2>
-        {draggable && (
-          <span className='sec-note'>pssst — try pulling them</span>
-        )}
+        <span className='idx'>01</span>
+        <h2>The toolbox</h2>
+        {draggable && <span className='sec-note'>pssst, try pulling them</span>}
       </div>
       <div className='skills'>
         {SKILLS.map((skill, i) => (

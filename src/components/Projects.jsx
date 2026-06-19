@@ -221,9 +221,9 @@ export default function Projects() {
   return (
     <section id='work' className='section-pad'>
       <div className='sec-head reveal d1'>
-        <span className='idx'>01</span>
+        <span className='idx'>02</span>
         <h2>Selected work</h2>
-        <span className='sec-note'>click a card to explode it</span>
+        <span className='sec-note'>click a card, any card</span>
       </div>
       <div className='grid'>
         {projects.map((project, i) => (

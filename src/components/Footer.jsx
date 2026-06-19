@@ -2,7 +2,7 @@ import CopyEmail from "@/components/CopyEmail";
 
 export default function Footer() {
   return (
-    <footer id='contact'>
+    <footer>
       <div className='big reveal d1'>Let&apos;s build something.</div>
       <div className='muted reveal d2'>
         <CopyEmail />

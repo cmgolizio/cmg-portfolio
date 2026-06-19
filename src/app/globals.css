@@ -1902,3 +1902,309 @@ html.js .reveal.seen {
     gap: 1.2rem;
   }
 }
+
+/* ============================================================
+   CONTACT FORM
+   Inputs/labels/buttons are all token-driven, so the form takes
+   on each theme's shape, type, color and button feel for free;
+   the per-theme rules below add only small in-character touches.
+   ============================================================ */
+.contact-lede {
+  max-width: 48ch;
+  color: var(--text-muted);
+  margin-bottom: 2.4rem;
+}
+
+.contact-form {
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: .45rem;
+}
+
+.field label {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: max(calc(var(--radius) - 6px), 4px);
+  padding: .8rem .95rem;
+  transition: border-color .2s var(--ease), box-shadow .2s var(--ease), background .25s;
+}
+
+.field textarea {
+  resize: vertical;
+  min-height: 7.5rem;
+}
+
+.field input::placeholder,
+.field textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.field input:focus-visible,
+.field textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"] {
+  border-color: var(--accent-2);
+}
+
+.field-err {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  color: var(--accent-2);
+}
+
+.contact-foot {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: .4rem;
+}
+
+.contact-form button[disabled] {
+  opacity: .6;
+  cursor: progress;
+}
+
+.contact-note {
+  font-family: var(--font-mono);
+  font-size: .8rem;
+  color: var(--accent-2);
+  max-width: 40ch;
+}
+
+/* honeypot: kept reachable for bots, lifted out of sight and off the AT tree */
+.hp {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* success panel — replaces the form once a message is on its way */
+.contact-sent {
+  max-width: 560px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .55rem;
+  padding: 1.8rem;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.contact-sent:focus-visible {
+  outline: none;
+}
+
+.contact-sent-mark {
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  font-size: 1.05rem;
+}
+
+.contact-sent-title {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: 1.3rem;
+  letter-spacing: var(--tracking);
+}
+
+.contact-sent-sub {
+  color: var(--text-muted);
+}
+
+.contact-sent .btn {
+  margin-top: .6rem;
+}
+
+/* technical: labels read like shell prompts (echoes the // heading prefix) */
+[data-theme="technical"] .field label::before {
+  content: "> ";
+  color: var(--accent);
+}
+
+/* creative: warmer focus ring + a label in the accent, to match the louder UI */
+[data-theme="creative"] .field label {
+  color: color-mix(in srgb, var(--accent) 70%, var(--text-muted));
+}
+
+/* ============================================================
+   RÉSUMÉ VIEWER
+   A themed overlay that embeds the canonical /resume.pdf. The
+   frame — backdrop, header, tactile buttons — re-skins with the
+   active style profile; the PDF is shown as-is. Touch devices,
+   where inline PDFs render unreliably, get a plain open/download
+   card instead of a blank frame.
+   ============================================================ */
+.resume-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: clamp(1rem, 4vmin, 3rem);
+  overflow: hidden;
+  background:
+    radial-gradient(120% 80% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 60%),
+    color-mix(in srgb, var(--bg) 50%, rgba(0, 0, 0, .6));
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.resume-sheet {
+  display: flex;
+  flex-direction: column;
+  width: min(900px, 100%);
+  height: min(92vh, 1040px);
+  overflow: hidden;
+  background: var(--surface);
+  border: var(--border-width) solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow), 0 40px 90px -30px rgba(0, 0, 0, .6);
+}
+
+.resume-sheet:focus-visible {
+  outline: none;
+}
+
+.resume-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.2rem;
+  border-bottom: var(--border-width) solid var(--border);
+  background: var(--surface);
+}
+
+.resume-eyebrow {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.resume-name {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  font-size: clamp(1.1rem, 2.6vw, 1.4rem);
+  letter-spacing: var(--tracking);
+  line-height: 1.1;
+}
+
+.resume-actions {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  flex-wrap: wrap;
+}
+
+.resume-actions .btn {
+  padding: .55rem .9rem;
+  font-size: .82rem;
+}
+
+.resume-close {
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 999px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color .2s, border-color .2s;
+}
+
+.resume-close:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+/* the embedded document fills the rest of the sheet */
+.resume-frame {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: var(--surface-alt);
+}
+
+/* touch fallback — a calm centered card instead of a blank frame */
+.resume-fallback {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2.4rem 1.4rem;
+  text-align: center;
+}
+
+.resume-fallback-note {
+  color: var(--text-muted);
+  max-width: 28ch;
+}
+
+.resume-fallback-actions {
+  display: flex;
+  gap: .7rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+@media (max-width: 560px) {
+  .resume-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .resume-actions {
+    width: 100%;
+  }
+
+  .resume-sheet {
+    height: min(94vh, 1040px);
+  }
+}

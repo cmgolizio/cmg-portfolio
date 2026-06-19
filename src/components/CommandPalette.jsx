@@ -11,6 +11,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { themeList } from "@/lib/themes";
 import { useTheme } from "@/components/ThemeProvider";
 import { switchThemeWithWipe } from "@/lib/themeWipe";
+import { RESUME_OPEN_EVENT, RESUME_PDF, RESUME_FILENAME } from "@/data/resume";
 
 // ⌘K / Ctrl+K command palette: jump to sections, switch themes (with the
 // wipe), or reach out. A small fixed hint chip doubles as the opener for
@@ -21,6 +22,31 @@ const SECTIONS = [
   { id: "workshop", label: "Jump to: The workshop", hint: "02" },
   { id: "skills", label: "Jump to: The toolkit", hint: "03" },
   { id: "contact", label: "Jump to: Contact", hint: "04" },
+];
+
+// Pull the file down without leaving the page (a plain <a download>, clicked).
+function downloadResume() {
+  const a = document.createElement("a");
+  a.href = RESUME_PDF;
+  a.download = RESUME_FILENAME;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+const RESUME = [
+  {
+    id: "resume-view",
+    label: "View résumé",
+    hint: "↘",
+    run: () => window.dispatchEvent(new Event(RESUME_OPEN_EVENT)),
+  },
+  {
+    id: "resume-download",
+    label: "Download résumé (PDF)",
+    hint: "↓",
+    run: downloadResume,
+  },
 ];
 
 const LINKS = [
@@ -88,6 +114,7 @@ export default function CommandPalette() {
         ...s,
         run: () => document.getElementById(s.id)?.scrollIntoView(),
       })),
+      ...RESUME,
       ...themeList.map((t) => ({
         id: `theme-${t.id}`,
         label: `Theme: ${t.label}`,

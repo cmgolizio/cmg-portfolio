@@ -2,6 +2,7 @@ import Hero from "@/components/Hero";
 import Projects from "@/components/Projects";
 import Workshop from "@/components/workshop/Workshop";
 import Skills from "@/components/Skills";
+import Contact from "@/components/Contact";
 import Footer from "@/components/Footer";
 
 export default function Home() {
@@ -11,6 +12,7 @@ export default function Home() {
       <Skills />
       <Projects />
       <Workshop />
+      <Contact />
       <Footer />
     </main>
   );
