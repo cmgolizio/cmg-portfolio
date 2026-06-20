@@ -119,7 +119,9 @@ function CardSections({ project, animate = false }) {
             Code ↗
           </a>
           {project.caseStudy && (
-            <Link href={`/work/${project.slug}`}>Case study →</Link>
+            <Link href='/work-in-progress?message=Coming%20Soon!'>
+              Case study →
+            </Link>
           )}
         </div>
       </Tile>
@@ -222,7 +224,7 @@ export default function Projects() {
     <section id='work' className='section-pad'>
       <div className='sec-head reveal d1'>
         <span className='idx'>02</span>
-        <h2>Selected work</h2>
+        <h2>The projects</h2>
         <span className='sec-note'>click a card, any card</span>
       </div>
       <div className='grid'>

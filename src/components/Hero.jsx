@@ -24,8 +24,8 @@ export default function Hero() {
           <HeroWord themeId={themeId} />
         </h1>
         <p className='lede reveal d3'>
-          Fullstack developer who builds with code, wood, plastic, circuits and
-          likes when they meet in the middle.
+          Fullstack developer + builder of things. Happy creating with code,
+          wood, plastic, and electricity, happiest when they play together.
         </p>
         <div className='cta-row reveal d4'>
           <Magnetic>

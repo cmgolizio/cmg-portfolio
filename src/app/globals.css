@@ -622,7 +622,7 @@ body::before {
 
 .lede {
   font-size: clamp(1.05rem, 2vw, 1.35rem);
-  max-width: 34ch;
+  max-width: 40ch;
   color: var(--text-muted);
   margin-bottom: 2.4rem;
   margin-left: auto;
@@ -1600,6 +1600,32 @@ footer .muted a:hover {
   height: 400px;
 }
 
+/* fullscreen: the stage fills the screen and the canvas takes all the room
+   left over by the bar and controls (the R3F Canvas tracks its container). */
+.bench-stage:fullscreen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  background: var(--bg);
+}
+
+.bench-stage:-webkit-full-screen {
+  width: 100vw;
+  height: 100vh;
+  border-radius: 0;
+  background: var(--bg);
+}
+
+.bench-stage:fullscreen .bench-canvas {
+  height: auto;
+  flex: 1 1 auto;
+}
+
+.bench-stage:-webkit-full-screen .bench-canvas {
+  height: auto;
+  flex: 1 1 auto;
+}
+
 [data-theme="minimal"] .bench-canvas {
   background: radial-gradient(420px 260px at 50% 0%, rgba(115, 107, 251, .07), transparent 70%);
 }
@@ -1618,10 +1644,26 @@ footer .muted a:hover {
 .bench-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
   padding: .7rem 1rem;
   border-top: 1px solid var(--border);
   background: color-mix(in srgb, var(--surface-alt) 55%, transparent);
+}
+
+/* zoom cluster: momentary +/reset/- buttons. They borrow the latch keyswitch
+   press but drop its toggle LED (they don't latch) and sit tight together. */
+.zoom-controls {
+  display: inline-flex;
+  gap: .4rem;
+}
+
+.zoom-btn {
+  padding: .5rem .6rem;
+}
+
+.zoom-btn::before {
+  display: none;
 }
 
 .bench-skeleton {

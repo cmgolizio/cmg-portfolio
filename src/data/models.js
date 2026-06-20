@@ -8,15 +8,17 @@ export const models = [
     name: "Cubey Lamp",
     file: "/models/cubey-lamp.glb",
     blurb:
-      "A bedside lamp with a twist — literally. Turning the cube-shaped lamp shade turns the light on and off.",
-    material: "Fusion 360 → glTF",
+      "A bedside lamp, containing two microswitches and a latching relay. Twisting the cube shaped lamp shade 90 degrees turns the LED strips within on and off.",
+    // material: "Fusion 360 → glTF",
+    material: "",
   },
   {
     slug: "sunglass-organizer",
     name: "Sunglass Organizer (woodworking)",
     file: "/models/sunglass-organizer.glb",
     blurb:
-      "A stylish way to store your sunglasses. The organizer features metal dowels for hanging sunglasses.",
-    material: "Fusion 360 → glTF",
+      'A way to store and display your overly excessive amount of sunglasses. Built IRL with a wooden frame and 3/16" dia. brass dowels.',
+    // material: "Fusion 360 → glTF",
+    material: "",
   },
 ];

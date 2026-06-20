@@ -13,16 +13,37 @@ import * as THREE from "three";
 
 // The workshop's 3D viewport. Loads a glTF assembly (a Fusion 360 export),
 // normalizes it to a fixed size, and explodes it like an assembly drawing:
-// every top-level component slides outward from the assembly's center by
-// `explode` (0..1). The viewport is too small for floating 3D labels, so
-// parts carry no label here: hovering a part flags it (pointer cursor + a
-// hint in the bench bar) and clicking it reports the part up so the manifest
-// list on the right can highlight (and scroll to) that part's name.
+// every top-level component drifts outward onto an invisible sphere centered
+// on the assembly, in an evenly-distributed direction, by `explode` (0..1).
+// The viewport is too small for floating 3D labels, so parts carry no label
+// here: hovering a part flags it (pointer cursor + a hint in the bench bar)
+// and clicking it reports the part up so the manifest list on the right can
+// highlight (and scroll to) that part's name.
 // React Compiler is opted out above — parts are mutated per-frame in useFrame.
 
-const FIT_RADIUS = 1.7; // model is scaled so its bounding radius is this
-const SPREAD = 1.15; // explode distance at 1, as a fraction of the raw radius
+const FIT_RADIUS = 1.7; // assembled model is scaled so its bounding radius is this
+const MAX_FIT_RADIUS = 2.0; // exploded extent is scaled to fit within this
 const SPIN_SPEED = 0.3; // rad/s turntable
+const CAMERA_POS = [3.8, 2.6, 4.9]; // default (reset) camera position
+const TARGET = [0, 0.1, 0]; // orbit pivot
+const MIN_DISTANCE = 2.4; // closest dolly-in
+const MAX_DISTANCE = 9; // farthest dolly-out
+const ZOOM_STEP = 1.25; // per-click dolly factor for the +/- buttons
+
+// Evenly-spaced points on the unit sphere (Fibonacci lattice). Used as the
+// blast directions so parts fan out symmetrically instead of clumping along
+// whatever off-center vectors the raw geometry happened to have.
+function fibonacciSphere(n) {
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const y = n === 1 ? 0 : 1 - (i / (n - 1)) * 2; // 1 .. -1
+    const r = Math.sqrt(Math.max(0, 1 - y * y));
+    const theta = golden * i;
+    pts.push(new THREE.Vector3(Math.cos(theta) * r, y, Math.sin(theta) * r));
+  }
+  return pts;
+}
 
 // "Rocker_Arm:1" (glTF-sanitized Fusion names) -> "Rocker Arm"
 const cleanName = (name, i) =>
@@ -58,26 +79,79 @@ function Assembly({ file, explode, spinning, onParts, onHover, onSelect }) {
       return has;
     });
     const parts = solids.map((child, i) => {
-      const childCenter = new THREE.Box3()
-        .setFromObject(child)
-        .getCenter(new THREE.Vector3());
-      const dir = childCenter.clone().sub(center);
-      if (dir.length() < 1e-4) dir.set(0, 1, 0);
-      dir.normalize();
+      const cbox = new THREE.Box3().setFromObject(child);
+      const anchor = cbox.getCenter(new THREE.Vector3());
+      const partRadius = cbox.getSize(new THREE.Vector3()).length() / 2 || 1e-3;
+      const natural = anchor.clone().sub(center);
+      if (natural.length() < 1e-4) natural.set(0, 1, 0);
+      natural.normalize();
       return {
         child,
         name: cleanName(child.name, i),
         home: child.userData.home,
-        dir,
-        anchor: childCenter,
+        anchor,
+        partRadius,
+        natural,
       };
     });
+
+    // Hand each part the evenly-spaced direction that best matches where it
+    // naturally sits, so the blast stays symmetric yet still reads like every
+    // part drifted straight out of its own slot (greedy nearest assignment).
+    const dirs = fibonacciSphere(parts.length);
+    const taken = new Array(dirs.length).fill(false);
+    for (const part of parts) {
+      let best = 0;
+      let bestDot = -Infinity;
+      for (let j = 0; j < dirs.length; j++) {
+        if (taken[j]) continue;
+        const d = part.natural.dot(dirs[j]);
+        if (d > bestDot) {
+          bestDot = d;
+          best = j;
+        }
+      }
+      taken[best] = true;
+      part.dir = dirs[best];
+    }
+
+    // Push the parts out far enough that no two bounding spheres touch. At full
+    // explode each part center lands on a sphere of radius `spread`, so a pair
+    // sits `spread * |dir_i - dir_j|` apart — solve for the tightest pair.
+    let maxPartRadius = 0;
+    for (const p of parts)
+      maxPartRadius = Math.max(maxPartRadius, p.partRadius);
+    let spread = maxPartRadius * 2.2; // floor for 1–2 part assemblies
+    for (let i = 0; i < parts.length; i++)
+      for (let j = i + 1; j < parts.length; j++) {
+        const chord = parts[i].dir.distanceTo(parts[j].dir);
+        if (chord < 1e-4) continue;
+        const need = (parts[i].partRadius + parts[j].partRadius) / chord;
+        if (need > spread) spread = need;
+      }
+    spread *= 1.18; // a little daylight between neighbours
+
+    // Full-explode displacement per part: lands its geometric center exactly on
+    // the sphere (the `center - anchor` term cancels the part's own offset so
+    // every part orbits the same invisible sphere, not its local position).
+    for (const p of parts) {
+      p.move = p.dir.clone().multiplyScalar(spread).add(center).sub(p.anchor);
+    }
+
+    // Scale so the *exploded* extent fits the stage (not just the assembled
+    // body) — the blast never grows past the viewport, at the cost of the
+    // assembled model reading a touch smaller.
+    const explodedRadius = spread + maxPartRadius || radius;
+    const scale = Math.min(
+      FIT_RADIUS / radius,
+      MAX_FIT_RADIUS / explodedRadius,
+    );
+
     return {
       parts,
       center,
-      scale: FIT_RADIUS / radius,
-      spread: radius * SPREAD,
-      floorY: (box.min.y - center.y) * (FIT_RADIUS / radius) - 0.05,
+      scale,
+      floorY: (box.min.y - center.y) * scale - 0.05,
     };
   }, [scene]);
 
@@ -98,9 +172,7 @@ function Assembly({ file, explode, spinning, onParts, onHover, onSelect }) {
     if (Math.abs(next - target) > 0.001) invalidate();
     current.current = Math.abs(next - target) <= 0.001 ? target : next;
     for (const p of layout.parts) {
-      p.child.position
-        .copy(p.home)
-        .addScaledVector(p.dir, current.current * layout.spread);
+      p.child.position.copy(p.home).addScaledVector(p.move, current.current);
     }
   });
 
@@ -211,6 +283,44 @@ function TouchPolicy() {
   return null;
 }
 
+// Bridges the out-of-canvas +/reset/- buttons to the perspective camera by
+// dollying along the view vector (clamped to the same range as scroll zoom).
+// Populates the `zoomApi` ref the parent passes down once the default
+// OrbitControls exists; the wheel/touchpad path is OrbitControls' own.
+function ZoomBridge({ zoomApiRef }) {
+  const camera = useThree((s) => s.camera);
+  const controls = useThree((s) => s.controls);
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    if (!controls || !zoomApiRef) return;
+    const dolly = (factor) => {
+      const offset = camera.position.clone().sub(controls.target);
+      const dist = THREE.MathUtils.clamp(
+        offset.length() * factor,
+        MIN_DISTANCE,
+        MAX_DISTANCE,
+      );
+      camera.position.copy(controls.target).add(offset.setLength(dist));
+      controls.update();
+      invalidate();
+    };
+    zoomApiRef.current = {
+      zoomIn: () => dolly(1 / ZOOM_STEP),
+      zoomOut: () => dolly(ZOOM_STEP),
+      reset: () => {
+        camera.position.set(...CAMERA_POS);
+        controls.target.set(...TARGET);
+        controls.update();
+        invalidate();
+      },
+    };
+    return () => {
+      zoomApiRef.current = null;
+    };
+  }, [camera, controls, invalidate, zoomApiRef]);
+  return null;
+}
+
 export default function ModelViewer({
   file,
   explode,
@@ -219,6 +329,7 @@ export default function ModelViewer({
   onGrab,
   onHoverChange,
   onSelect,
+  zoomApiRef,
 }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
@@ -230,7 +341,7 @@ export default function ModelViewer({
     <Canvas
       frameloop={spinning ? "always" : "demand"}
       dpr={[1, 2]}
-      camera={{ fov: 35, position: [3.4, 2.3, 4.4] }}
+      camera={{ fov: 35, position: CAMERA_POS }}
       gl={{ antialias: true, alpha: true, powerPreference: "low-power" }}
       // One-finger vertical drag keeps scrolling the page on touch; orbit
       // works with horizontal drags (and any mouse drag).
@@ -255,14 +366,19 @@ export default function ModelViewer({
           onSelect={onSelect}
         />
       </Suspense>
+      {/* No polar clamp: the model tumbles a full 360° on every axis so any
+          face can be brought into view (azimuth is unbounded by default).
+          Zoom is on — wheel and two-finger touchpad/pinch dolly the camera,
+          clamped between MIN_DISTANCE and MAX_DISTANCE. */}
       <OrbitControls
         makeDefault
-        enableZoom={false}
+        enableZoom
         enablePan={false}
-        minPolarAngle={0.25}
-        maxPolarAngle={1.5}
-        target={[0, 0.1, 0]}
+        minDistance={MIN_DISTANCE}
+        maxDistance={MAX_DISTANCE}
+        target={TARGET}
       />
+      <ZoomBridge zoomApiRef={zoomApiRef} />
       {/* after OrbitControls: it forces touch-action:none on connect */}
       <TouchPolicy />
     </Canvas>

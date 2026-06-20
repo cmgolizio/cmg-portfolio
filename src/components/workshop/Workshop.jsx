@@ -1,10 +1,38 @@
 "use client";
 
-import { Component, useCallback, useEffect, useRef, useState } from "react";
+import {
+  Component,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import dynamic from "next/dynamic";
 import { useReducedMotion } from "framer-motion";
 import { models } from "@/data/models";
 import { ratchetSound } from "@/lib/clicker";
+
+// The Fullscreen API is an external (DOM) store, so read it through
+// useSyncExternalStore: SSR returns false, the client reconciles after mount
+// with no hydration mismatch, and there's no setState-in-effect.
+const fsElement = () =>
+  typeof document !== "undefined" &&
+  (document.fullscreenElement || document.webkitFullscreenElement);
+const subscribeFs = (cb) => {
+  document.addEventListener("fullscreenchange", cb);
+  document.addEventListener("webkitfullscreenchange", cb);
+  return () => {
+    document.removeEventListener("fullscreenchange", cb);
+    document.removeEventListener("webkitfullscreenchange", cb);
+  };
+};
+const noopSubscribe = () => () => {};
+const fsSupportedSnapshot = () =>
+  typeof document !== "undefined" &&
+  Boolean(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+const falseSnapshot = () => false;
+const isFullscreenSnapshot = () => Boolean(fsElement());
 
 // "The workshop": physical builds, shown as live exploded assembly drawings.
 // three.js is heavy, so the viewer bundle loads only when the section is
@@ -55,6 +83,23 @@ export default function Workshop() {
   const [partHovered, setPartHovered] = useState(false);
   const [selectedIdx, setSelectedIdx] = useState(null);
   const selectedRef = useRef(null);
+  // Imperative handle the viewer fills in with { zoomIn, zoomOut, reset } so
+  // the +/reset/- buttons can dolly the camera (null until the bundle mounts).
+  const zoomApiRef = useRef(null);
+  // The stage (canvas + controls) is what goes fullscreen, so the explode
+  // lever and spin latch stay usable. iOS Safari only fullscreens <video>, so
+  // feature-detect and hide the button where it would do nothing.
+  const stageEl = useRef(null);
+  const fsSupported = useSyncExternalStore(
+    noopSubscribe,
+    fsSupportedSnapshot,
+    falseSnapshot,
+  );
+  const isFullscreen = useSyncExternalStore(
+    subscribeFs,
+    isFullscreenSnapshot,
+    falseSnapshot,
+  );
 
   const spinning = userSpin ?? !reduceMotion;
   const model = models[activeIdx];
@@ -77,6 +122,18 @@ export default function Workshop() {
     );
     io.observe(el);
     return () => io.disconnect();
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const el = stageEl.current;
+    if (!el) return;
+    if (fsElement()) {
+      (document.exitFullscreen || document.webkitExitFullscreen)?.call(
+        document,
+      );
+    } else {
+      (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el);
+    }
   }, []);
 
   const onParts = useCallback((names) => setParts(names), []);
@@ -106,12 +163,12 @@ export default function Workshop() {
         <span className='idx'>03</span>
         <h2>The workshop</h2>
         <span className='sec-note'>
-          drag to orbit · slide the bar to explode model
+          drag to orbit · scroll to zoom · slide the bar to explode model
         </span>
       </div>
 
       <div className='bench reveal d2'>
-        <div className='bench-stage'>
+        <div className='bench-stage' ref={stageEl}>
           <div className='bench-bar'>
             <span className='bench-title-group'>
               <span className='bench-title'>{model.name}</span>
@@ -132,6 +189,7 @@ export default function Workshop() {
                   onGrab={onGrab}
                   onHoverChange={setPartHovered}
                   onSelect={setSelectedIdx}
+                  zoomApiRef={zoomApiRef}
                 />
               </ViewerBoundary>
             ) : (
@@ -156,6 +214,31 @@ export default function Workshop() {
                 aria-label='Exploded view amount'
               />
             </label>
+            <div className='zoom-controls' role='group' aria-label='Zoom'>
+              <button
+                type='button'
+                className='latch zoom-btn'
+                onClick={() => zoomApiRef.current?.zoomOut()}
+                aria-label='Zoom out'
+              >
+                −
+              </button>
+              <button
+                type='button'
+                className='latch zoom-btn'
+                onClick={() => zoomApiRef.current?.reset()}
+              >
+                reset
+              </button>
+              <button
+                type='button'
+                className='latch zoom-btn'
+                onClick={() => zoomApiRef.current?.zoomIn()}
+                aria-label='Zoom in'
+              >
+                +
+              </button>
+            </div>
             <button
               type='button'
               className='latch'
@@ -164,6 +247,16 @@ export default function Workshop() {
             >
               spin
             </button>
+            {fsSupported && (
+              <button
+                type='button'
+                className='latch'
+                aria-pressed={isFullscreen}
+                onClick={toggleFullscreen}
+              >
+                {isFullscreen ? "exit" : "fullscreen"}
+              </button>
+            )}
           </div>
         </div>
 
