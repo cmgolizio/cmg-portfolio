@@ -1,13 +1,4 @@
-/* ============================================================
-   Tailwind — keep whichever line matches YOUR version.
-   create-next-app (recent) uses Tailwind v4 (the @import line).
-   If you're on Tailwind v3, delete the @import and uncomment
-   the three @tailwind directives instead.
-   ============================================================ */
 @import "tailwindcss";
-/* @tailwind base;
-   @tailwind components;
-   @tailwind utilities; */
 
 /* ============================================================
    THEME TOKEN ARCHITECTURE
@@ -358,6 +349,153 @@ body::before {
 
 [data-theme="minimal"] .switcher button[aria-pressed="true"] {
   color: #fff
+}
+
+/* ---------- PAGE NAV (left rail · scroll-spy) ----------
+   Bare text links rendered straight onto the page — no panel, no fill, so
+   they sit on whatever background the active theme provides. The active
+   section's label is tinted with the accent (text only, no chip); on each
+   section change a light "unsheathe" gleam sweeps across that label, L→R.
+   --pn-shine is the colour of that gleam. */
+.pagenav {
+  position: fixed;
+  z-index: 45;
+  /* sticks to the viewport and follows the scroll; flush to the left edge
+     (0 margin) with a little breathing room from the top. The rail spans
+     roughly a third of the viewport height, with the links spread evenly
+     down it. */
+  top: 1.6rem;
+  left: 0;
+  height: 34vh;
+  padding: .2rem .9rem;
+  --pn-shine: #ffffff;
+}
+
+.pagenav ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* equal-height rows so the links are evenly spread down the third-of-screen
+   rail, each link centred in its row. */
+.pagenav li {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+/* a skinny vertical line in the gap above each title (so one sits between
+   every pair), drawn from the label's left edge — i.e. colinear with the
+   first letter of the title. */
+.pagenav li:not(:first-child) .pagenav-label::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + .5rem);
+  height: calc((34vh - .4rem) / 5 - 1.6rem);
+  width: 1px;
+  background: color-mix(in srgb, var(--text-muted) 45%, transparent);
+  pointer-events: none;
+}
+
+.pagenav a {
+  display: flex;
+  align-items: baseline;
+  gap: .5rem;
+  text-decoration: none;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: .74rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  /* grows from the left so it expands rightward, never shifting the rail. */
+  transform-origin: left center;
+  transition: color .25s var(--ease), transform .2s var(--ease);
+}
+
+.pagenav a:hover {
+  color: var(--text);
+  font-weight: 800;
+  transform: scale(1.08);
+}
+
+/* active section: the label text is highlighted with the accent — no chip. */
+.pagenav a.is-active {
+  color: var(--accent);
+}
+
+.pagenav a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.pagenav-num {
+  font-size: .62rem;
+  opacity: .5;
+  font-variant-numeric: tabular-nums;
+}
+
+.pagenav-label {
+  position: relative;
+  white-space: nowrap;
+}
+
+/* the unsheathe gleam: a bright band clipped to the glyphs sweeps across the
+   active label once (the component re-arms it on each section change). */
+.pagenav-label.flash {
+  /* gradient is 2× the text width with a bright band at its centre; sliding
+     background-position from 100%→0% keeps the glyphs fully painted at every
+     step (no gaps) while the band sweeps left→right across them. */
+  background-image: linear-gradient(105deg,
+      var(--accent) 0%,
+      var(--accent) 46%,
+      color-mix(in srgb, var(--pn-shine) 55%, var(--accent)) 49%,
+      var(--pn-shine) 50%,
+      color-mix(in srgb, var(--pn-shine) 55%, var(--accent)) 51%,
+      var(--accent) 54%,
+      var(--accent) 100%);
+  background-size: 200% 100%;
+  background-repeat: no-repeat;
+  background-position: 100% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pagenav-unsheathe .7s ease-out forwards;
+}
+
+@keyframes pagenav-unsheathe {
+  from {
+    background-position: 100% 0;
+  }
+
+  to {
+    background-position: 0% 0;
+  }
+}
+
+/* --- Technical: terminal caret on the active row --- */
+[data-theme="technical"] .pagenav a.is-active .pagenav-label::before {
+  content: ">";
+  margin-right: .3rem;
+  color: var(--accent);
+}
+
+/* --- Creative: display type, no numbers --- */
+[data-theme="creative"] .pagenav a {
+  font-family: var(--font-display);
+  font-weight: var(--display-weight);
+  text-transform: none;
+  letter-spacing: var(--tracking);
+  font-size: .85rem;
+}
+
+[data-theme="creative"] .pagenav-num {
+  display: none;
 }
 
 /* ---------- THEME INTRO (coachmark + auto-cycle caption) ---------- */

@@ -12,6 +12,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 import { ThemeProvider } from "@/components/ThemeProvider";
 import ThemeSwitcher from "@/components/ThemeSwitcher";
+import PageNav from "@/components/PageNav";
 import ThemeIntro from "@/components/ThemeIntro";
 import CommandPalette from "@/components/CommandPalette";
 import ResumeViewer from "@/components/ResumeViewer";
@@ -26,7 +27,8 @@ import Clicker from "@/components/Clicker";
 // --font-display / --font-body tokens at the right one.
 // Weights are trimmed to exactly what the CSS uses:
 // display fonts at their theme's --display-weight, body fonts at 400/600,
-// mono at 400 (+700 as the Technical display weight).
+// mono at 400 (+700 as the Technical display weight, +800 for the page-nav
+// extrabold hover).
 const fraunces = Fraunces({
   subsets: ["latin"],
   weight: ["600"],
@@ -41,7 +43,7 @@ const hanken = Hanken_Grotesk({
 });
 const jetbrains = JetBrains_Mono({
   subsets: ["latin"],
-  weight: ["400", "700"],
+  weight: ["400", "700", "800"],
   variable: "--font-jetbrains",
   display: "swap",
 });
@@ -95,6 +97,7 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeProvider>
           <ThemeSwitcher />
+          <PageNav />
           <ThemeIntro />
           <CommandPalette />
           <ResumeViewer />
