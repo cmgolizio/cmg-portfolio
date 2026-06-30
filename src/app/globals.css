@@ -410,7 +410,7 @@ body::before {
   text-decoration: none;
   color: var(--text-muted);
   font-family: var(--font-mono);
-  font-size: .74rem;
+  font-size: .92rem;
   letter-spacing: .04em;
   text-transform: uppercase;
   /* grows from the left so it expands rightward, never shifting the rail. */
@@ -491,11 +491,18 @@ body::before {
   font-weight: var(--display-weight);
   text-transform: none;
   letter-spacing: var(--tracking);
-  font-size: .85rem;
+  font-size: 1rem;
 }
 
 [data-theme="creative"] .pagenav-num {
   display: none;
+}
+
+/* On mobile the rail would overlap the content, so it isn't rendered. */
+@media (max-width: 640px) {
+  .pagenav {
+    display: none;
+  }
 }
 
 /* ---------- THEME INTRO (coachmark + auto-cycle caption) ---------- */
