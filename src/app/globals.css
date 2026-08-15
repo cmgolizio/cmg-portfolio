@@ -172,9 +172,10 @@ body::before {
    (`.panel-bleed`) and run edge to edge — which is what the projects shelf
    does. `svh` rather than `vh`/`dvh` keeps a panel one screen tall on mobile
    without resizing every time the URL bar hides.
-   SectionSnap.jsx makes the deck magnetic on fine pointers; touch pointers get
-   the native scroll-snap below, which already has the right physics for a
-   finger and doesn't fight momentum. */
+
+   The magnetism lives in SectionSnap.jsx, which settles the page onto a panel
+   after a scroll ends. It is deliberately not CSS scroll-snap: `mandatory`
+   refuses small scrolls outright, and `proximity` won't reliably land. */
 .panels {
   position: relative;
   z-index: 1;
@@ -194,10 +195,10 @@ body::before {
   /* `safe` keeps the top of an over-tall panel reachable rather than
      centering it off the top edge */
   justify-content: safe center;
-  /* a panel taller than the screen scrolls itself; the snap controller waits
-     for it to run out of room before paging on */
+  /* a panel taller than the screen scrolls itself, then hands the scroll back
+     to the page at its end — never `overscroll-behavior: contain`, which would
+     strand the reader inside a panel that fills the whole screen */
   overflow-y: auto;
-  overscroll-behavior: contain;
 }
 
 .panel-bleed {
@@ -209,17 +210,6 @@ body::before {
 /* panels are tight on vertical room — section headings give some back */
 .panel .sec-head {
   margin-bottom: clamp(1.3rem, 3.4vh, 2.6rem);
-}
-
-@media (hover: none),
-(pointer: coarse) {
-  html {
-    scroll-snap-type: y mandatory;
-  }
-
-  .panel {
-    scroll-snap-align: start;
-  }
 }
 
 /* ---------- FLUID FX (FluidCursor) ----------
@@ -1539,12 +1529,19 @@ footer .muted a:hover {
    in a body-level portal), still tilting toward the cursor but
    several times its old size.
    ============================================================ */
+/* The shelf's own background is the ink: padding draws the frame around the
+   slats and the gap draws the mullions between them, so the bars read as
+   separate boards rather than one surface with seams in it. */
 .shelf {
-  --spine-strip: clamp(3.2rem, 5vw, 5rem);
+  --spine-strip: clamp(3.6rem, 5.5vw, 5.6rem);
+  --shelf-rule: clamp(8px, .85vw, 14px);
   flex: 1;
   min-height: 0;
   width: 100%;
   display: flex;
+  gap: var(--shelf-rule);
+  padding: var(--shelf-rule);
+  background: color-mix(in srgb, var(--text) 72%, var(--bg));
 }
 
 .spine {
@@ -1555,12 +1552,9 @@ footer .muted a:hover {
   align-items: stretch;
   overflow: hidden;
   cursor: default;
-  border-left: var(--border-width) solid var(--border);
   background: linear-gradient(180deg,
       color-mix(in srgb, var(--surface) 84%, var(--spine-tint) 16%),
       color-mix(in srgb, var(--surface-alt) 78%, var(--spine-tint) 22%));
-  /* the gutter shadow where one volume presses against the next */
-  box-shadow: inset 7px 0 20px -15px rgba(0, 0, 0, .75);
   transition: flex-grow .55s var(--ease), background .45s var(--ease),
     box-shadow .45s var(--ease);
 }
@@ -1580,11 +1574,6 @@ footer .muted a:hover {
 
 .spine:nth-child(4n+4) {
   --spine-tint: color-mix(in srgb, var(--accent) 50%, var(--accent-2));
-}
-
-.spine:first-child {
-  border-left: 0;
-  box-shadow: none;
 }
 
 /* the open spine sits above its neighbours so its glow isn't clipped */
@@ -1616,7 +1605,9 @@ footer .muted a:hover {
   background: none;
   color: inherit;
   cursor: inherit;
+  /* set up the spine of a book: vertical, and reading from the foot upward */
   writing-mode: vertical-rl;
+  transform: rotate(180deg);
   transition: flex-grow .55s var(--ease), color .35s var(--ease);
 }
 
@@ -1655,7 +1646,7 @@ footer .muted a:hover {
 .spine-name {
   font-family: var(--font-display);
   font-weight: var(--display-weight);
-  font-size: clamp(1rem, 1.9vw, 1.9rem);
+  font-size: clamp(1.1rem, 2.4vw, 2.5rem);
   letter-spacing: var(--tracking);
   white-space: nowrap;
   overflow: hidden;

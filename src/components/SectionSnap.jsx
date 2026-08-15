@@ -4,59 +4,68 @@ import { useEffect } from "react";
 
 // Magnetic full-viewport paging.
 //
-// Every `.panel` on the home page is exactly one screen tall. Instead of
-// letting the wheel scroll freely between them, a panel *holds on*: scrolling
-// drags it a few pixels against a spring (the resistance), and only once the
-// accumulated intent passes THRESHOLD does it let go and the next panel snaps
-// into place. Stop short and the panel springs back — nothing moved.
+// Every `.panel` is one screen tall. Scrolling itself is left completely
+// alone — the page moves with the wheel or the finger exactly as it always
+// would. What this adds is what happens when you stop: nudge the page and it
+// slides back to the panel you were on; push past the threshold and it carries
+// you the rest of the way onto the next one, and only ever onto the next one.
 //
-// Deliberately narrow scope:
-//   • fine pointers only. Touch gets native CSS scroll-snap (globals.css), which
-//     already has the right physics for a finger and doesn't fight momentum.
-//   • reduced-motion visitors are left with plain scrolling.
-//   • anything genuinely scrollable under the cursor (an overflowing panel, the
-//     workshop's parts manifest) scrolls itself first; `[data-no-snap]` opts an
-//     element out entirely (the 3D canvas, where the wheel means zoom).
-//   • while a modal has locked the body, the wheel is none of our business.
+// The rule this file obeys: never call preventDefault on a scroll. A handler
+// that has to swallow the wheel to work can also swallow it when it misreads a
+// gesture — trackpad jitter and momentum tails make that easy — and then the
+// page is simply stuck. Nothing here can produce that outcome; the worst case
+// if the logic below is wrong is that the page doesn't line up.
+//
+// CSS scroll-snap isn't used for the same reason: `mandatory` refuses small
+// scrolls outright (a single wheel notch moves nothing at all), and
+// `proximity` won't reliably land on a panel.
 
-const THRESHOLD = 140; // normalized px of intent before a panel lets go
-const MAX_PULL = 30; // px a panel gives while it resists
-const PULL_SOFTNESS = 210; // higher = the give arrives more gradually
-const IDLE_MS = 380; // quiet for this long → the pull springs back
-// (long enough that two deliberate mouse-wheel notches still add up)
-const SETTLE_MS = 260; // spring-back duration
-const TRAVEL_MS = 620; // how long the snap to the next panel takes
-const COOLDOWN_MS = 300; // ignore trackpad momentum arriving after a snap
+const REST_MS = 160; // quiet this long and a wheel gesture is over
+// Everything else that scrolls the page — a nav link, a paging key, the
+// scrollbar — is given a much longer quiet window. Those are animations we
+// don't own, and a single slow frame in the middle of one looks exactly like
+// a finished gesture; settling into that gap would drag the visitor back to
+// whichever panel they happened to be passing. Nothing waits on this delay,
+// so there's no cost to being sure.
+const REST_SLOW_MS = 450;
+const TRAVEL_MAX = 430; // longest a settle may take
+const TRAVEL_RATE = 0.36; // ms per px, so a short spring-back stays quick
+// How far the page must actually move to be taken forward. It has to sit under
+// one detent of any browser's mouse wheel — otherwise a wheel user nudges the
+// page and watches it slide back, over and over, which reads as a site that
+// won't scroll.
+const COMMIT_PX = 46;
+const COMMIT_SHARE = 0.06;
 
-const easeOut = (t) => 1 - Math.pow(1 - t, 4);
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);
 
 export default function SectionSnap() {
   useEffect(() => {
-    const fine = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!fine || reduced) return;
-
     const panels = Array.from(document.querySelectorAll(".panel"));
     if (panels.length < 2) return;
+    // Leave reduced-motion visitors with plain, unassisted scrolling.
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-    let index = 0;
-    let accum = 0; // scroll intent since the last settle
-    let pull = 0; // px the current panel is currently held back by
-    let animating = false;
-    let cooldownUntil = 0;
-    let idleTimer = 0;
-    let travelRaf = 0;
-    let settleRaf = 0;
-    let syncRaf = 0;
+    const root = document.documentElement;
+    // The panel you were resting on when the current gesture began — drift is
+    // measured from here, which is what makes a half-hearted scroll reversible.
+    let anchor = 0;
+    // Set by the wheel, cleared by the settle that follows it, so the "one
+    // panel at a time" rule applies to exactly the gestures it should and
+    // never depends on how long a momentum tail happened to run.
+    let fromWheel = false;
+    let restTimer = 0;
+    let raf = 0;
+    let settling = false;
 
-    // A modal owns the page whenever it has locked the body.
-    const locked = () => document.body.style.overflow === "hidden";
+    const topOf = (i) =>
+      Math.round(panels[i].getBoundingClientRect().top + window.scrollY);
 
     const nearest = () => {
       let best = 0;
       let bestDist = Infinity;
-      panels.forEach((el, i) => {
-        const dist = Math.abs(el.getBoundingClientRect().top);
+      panels.forEach((_, i) => {
+        const dist = Math.abs(topOf(i) - window.scrollY);
         if (dist < bestDist) {
           bestDist = dist;
           best = i;
@@ -65,159 +74,117 @@ export default function SectionSnap() {
       return best;
     };
 
-    const setPull = (el, px) => {
-      pull = px;
-      el.style.transform = px ? `translate3d(0, ${px.toFixed(2)}px, 0)` : "";
+    const endSettle = () => {
+      cancelAnimationFrame(raf);
+      root.style.scrollBehavior = "";
+      settling = false;
     };
 
-    // Does something under the cursor want this wheel event for itself?
-    const wantsWheel = (node, dir) => {
-      for (let el = node; el && el !== document.body; el = el.parentElement) {
-        if (el.dataset?.noSnap !== undefined) return true;
-        const overflowY = getComputedStyle(el).overflowY;
-        if (overflowY !== "auto" && overflowY !== "scroll") continue;
-        const room = el.scrollHeight - el.clientHeight;
-        if (room <= 1) continue;
-        if (dir > 0 ? el.scrollTop < room - 1 : el.scrollTop > 1) return true;
-      }
-      return false;
-    };
-
-    // Nothing crossed the threshold — hand the panel back.
-    const settle = () => {
-      const el = panels[index];
-      const from = pull;
-      if (!from) {
-        accum = 0;
-        return;
-      }
-      const start = performance.now();
-      cancelAnimationFrame(settleRaf);
-      const step = (now) => {
-        const t = Math.min((now - start) / SETTLE_MS, 1);
-        setPull(el, from * (1 - easeOut(t)));
-        if (t < 1) settleRaf = requestAnimationFrame(step);
-      };
-      settleRaf = requestAnimationFrame(step);
-      accum = 0;
-    };
-
-    // Let go: release the held panel and carry the page to `next`.
-    const travel = (next) => {
-      if (next < 0 || next >= panels.length) return settle();
-      const el = panels[index];
-      const held = pull;
+    // The settle is tweened here rather than handed to
+    // scrollTo({ behavior: "smooth" }), which takes the better part of a
+    // second to cross a panel and lands whenever it likes. `scroll-behavior:
+    // auto` is set inline for the duration so the stylesheet's `smooth`
+    // doesn't try to re-animate every frame of it.
+    const travel = (to) => {
       const from = window.scrollY;
-      const to = from + panels[next].getBoundingClientRect().top;
-      accum = 0;
-      animating = true;
-      clearTimeout(idleTimer);
-      cancelAnimationFrame(settleRaf);
-      cancelAnimationFrame(travelRaf);
-      const start = performance.now();
-      const step = (now) => {
-        const t = Math.min((now - start) / TRAVEL_MS, 1);
-        const e = easeOut(t);
-        // `instant` opts out of html { scroll-behavior: smooth }, which would
-        // otherwise smooth every frame of this tween against itself.
-        window.scrollTo({ top: from + (to - from) * e, behavior: "instant" });
-        setPull(el, held * (1 - e));
+      const dist = to - from;
+      const ms = Math.min(TRAVEL_MAX, 150 + Math.abs(dist) * TRAVEL_RATE);
+      settling = true;
+      root.style.scrollBehavior = "auto";
+      const startedAt = performance.now();
+      cancelAnimationFrame(raf);
+      const frame = (now) => {
+        if (!settling) return; // the visitor took over
+        const t = Math.min((now - startedAt) / ms, 1);
+        window.scrollTo(0, from + dist * easeOut(t));
         if (t < 1) {
-          travelRaf = requestAnimationFrame(step);
+          raf = requestAnimationFrame(frame);
           return;
         }
-        setPull(el, 0);
-        index = next;
-        animating = false;
-        cooldownUntil = performance.now() + COOLDOWN_MS;
+        endSettle();
+        anchor = nearest();
       };
-      travelRaf = requestAnimationFrame(step);
+      raf = requestAnimationFrame(frame);
     };
 
-    const onWheel = (e) => {
-      if (locked() || e.ctrlKey) return;
-      const delta =
-        e.deltaMode === 1
-          ? e.deltaY * 16
-          : e.deltaMode === 2
-            ? e.deltaY * window.innerHeight
-            : e.deltaY;
-      if (!delta) return;
-      const dir = delta > 0 ? 1 : -1;
-      if (wantsWheel(e.target, dir)) return;
-      if (index + dir < 0 || index + dir >= panels.length) return;
+    const onRest = () => {
+      if (settling) return;
+      let target = nearest();
 
-      e.preventDefault();
-      // Trailing momentum from the flick that caused the last snap isn't a
-      // request for another one.
-      if (animating || performance.now() < cooldownUntil) return;
+      // A wheel gesture moves exactly one panel: past the threshold you go on,
+      // short of it you come back — however far the flick actually carried the
+      // page. Anything else that moved it (a scrollbar drag, a nav link, a
+      // touch fling) is taken at face value and just lands on the closest.
+      if (fromWheel) {
+        fromWheel = false;
+        const drift = window.scrollY - topOf(anchor);
+        const commit = Math.max(COMMIT_PX, window.innerHeight * COMMIT_SHARE);
+        const step = drift > commit ? 1 : drift < -commit ? -1 : 0;
+        target = Math.min(Math.max(anchor + step, 0), panels.length - 1);
+      }
 
-      if (Math.sign(accum) !== dir) accum = 0;
-      accum += delta;
-      clearTimeout(idleTimer);
-      idleTimer = setTimeout(settle, IDLE_MS);
-
-      if (Math.abs(accum) >= THRESHOLD) {
-        travel(index + dir);
+      const to = topOf(target);
+      if (Math.abs(window.scrollY - to) < 2) {
+        anchor = target;
         return;
       }
-      cancelAnimationFrame(settleRaf);
-      setPull(
-        panels[index],
-        -dir * MAX_PULL * (1 - Math.exp(-Math.abs(accum) / PULL_SOFTNESS)),
+      travel(to);
+    };
+
+    // "The scroll is over" has to mean the page actually stopped, not merely
+    // that no scroll event arrived for a moment — so the position is checked
+    // again when the timer fires, and a page still on the move re-arms.
+    const onScroll = () => {
+      clearTimeout(restTimer);
+      const seen = window.scrollY;
+      restTimer = setTimeout(
+        () => {
+          if (Math.abs(window.scrollY - seen) > 1) return onScroll();
+          onRest();
+        },
+        fromWheel ? REST_MS : REST_SLOW_MS,
       );
     };
 
-    // Paging keys move a whole panel; a panel that scrolls internally keeps
-    // its own key handling until it runs out of room.
-    const STEPS = { ArrowDown: 1, PageDown: 1, ArrowUp: -1, PageUp: -1 };
-    const onKey = (e) => {
-      if (locked() || e.metaKey || e.ctrlKey || e.altKey || animating) return;
-      const el = e.target;
-      if (
-        el?.isContentEditable ||
-        ["INPUT", "TEXTAREA", "SELECT"].includes(el?.tagName)
-      )
-        return;
-      if (e.key === "Home" || e.key === "End") {
-        e.preventDefault();
-        travel(e.key === "Home" ? 0 : panels.length - 1);
-        return;
-      }
-      const dir = STEPS[e.key];
-      if (!dir) return;
-      if (wantsWheel(el, dir)) return;
-      if (index + dir < 0 || index + dir >= panels.length) return;
-      e.preventDefault();
-      travel(index + dir);
+    // Fresh input during a settle means the visitor overruled it.
+    const interrupt = () => {
+      if (!settling) return;
+      endSettle();
+      anchor = nearest();
+    };
+    const onWheel = () => {
+      fromWheel = true;
+      interrupt();
+    };
+    // Any other input starts a scroll that isn't a wheel gesture, so it must
+    // also clear the flag — a wheel that only scrolled a panel's own overflow
+    // never reaches a settle, and the stale flag would otherwise be spent on
+    // whatever moved the page next.
+    const onOtherInput = () => {
+      fromWheel = false;
+      interrupt();
     };
 
-    // Anchor links (the page nav, the hero CTAs, the command palette) scroll
-    // the page out from under us — re-read which panel we ended up on.
-    const onScroll = () => {
-      if (animating || syncRaf) return;
-      syncRaf = requestAnimationFrame(() => {
-        syncRaf = 0;
-        if (!animating) index = nearest();
-      });
-    };
-
-    index = nearest();
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("keydown", onKey);
-    window.addEventListener("scroll", onScroll, { passive: true });
+    anchor = nearest();
+    const passive = { passive: true };
+    window.addEventListener("scroll", onScroll, passive);
+    window.addEventListener("wheel", onWheel, passive);
+    window.addEventListener("touchstart", onOtherInput, passive);
+    window.addEventListener("keydown", onOtherInput);
+    // a click mid-settle is usually a nav link or the scrollbar, and both want
+    // to take the page somewhere this tween would otherwise talk over
+    window.addEventListener("pointerdown", onOtherInput, passive);
+    window.addEventListener("resize", onScroll);
 
     return () => {
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("keydown", onKey);
+      clearTimeout(restTimer);
+      endSettle();
       window.removeEventListener("scroll", onScroll);
-      clearTimeout(idleTimer);
-      cancelAnimationFrame(travelRaf);
-      cancelAnimationFrame(settleRaf);
-      cancelAnimationFrame(syncRaf);
-      panels.forEach((el) => {
-        el.style.transform = "";
-      });
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onOtherInput);
+      window.removeEventListener("keydown", onOtherInput);
+      window.removeEventListener("pointerdown", onOtherInput);
+      window.removeEventListener("resize", onScroll);
     };
   }, []);
 
