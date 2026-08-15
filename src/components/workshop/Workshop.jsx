@@ -158,7 +158,7 @@ export default function Workshop() {
   };
 
   return (
-    <section id='workshop' className='section-pad'>
+    <section id='workshop' className='panel'>
       <div className='sec-head reveal d1'>
         <span className='idx'>03</span>
         <h2>The workshop</h2>
@@ -178,7 +178,8 @@ export default function Workshop() {
             </span>
             <span className='bench-badge'>{model.material}</span>
           </div>
-          <div className='bench-canvas' ref={stageRef}>
+          {/* the wheel means zoom in here, never page to the next section */}
+          <div className='bench-canvas' ref={stageRef} data-no-snap>
             {inView ? (
               <ViewerBoundary key={model.file} file={model.file}>
                 <ModelViewer

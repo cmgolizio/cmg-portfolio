@@ -38,7 +38,7 @@ export default function Skills() {
   const creative = themeId === "creative";
 
   return (
-    <section id='skills' className='section-pad'>
+    <section id='skills' className='panel'>
       <div className='sec-head reveal d1'>
         <span className='idx'>01</span>
         <h2>The toolbox</h2>

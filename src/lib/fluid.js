@@ -26,15 +26,16 @@ import * as THREE from "three";
 const SIM_RESOLUTION = 128;
 const DYE_RESOLUTION = 512;
 
-// Tuned for a calm, faded, iridescent wash: chill movement that's
-// clearly there but easy to ignore. These are the main "feel" knobs.
+// Tuned for a thick, slow-moving film rather than a wash of smoke: the
+// motion damps quickly (viscous), the ink lingers a beat longer, and the
+// display pass keeps it nearly transparent. These are the main "feel" knobs.
 const PRESSURE_ITERATIONS = 20; // Jacobi sweeps; more = stiffer fluid
-const CURL = 5; // vorticity confinement — lower = less smoky billow
-const VELOCITY_DISSIPATION = 0.3; // how fast motion settles
-const DENSITY_DISSIPATION = 1.0; // how fast the ink fades out
-const SPLAT_FORCE = 2600; // mouse velocity → fluid force (gentler)
-const SPLAT_RADIUS = 0.18; // ink blob size — tighter = more liquid thread
-const DYE_AMOUNT = 0.09; // base ink deposited per move (kept faint)
+const CURL = 3.2; // vorticity confinement — lower = less smoky billow
+const VELOCITY_DISSIPATION = 0.55; // how fast motion settles — higher = thicker
+const DENSITY_DISSIPATION = 0.8; // how fast the ink fades out
+const SPLAT_FORCE = 2200; // mouse velocity → fluid force (gentler)
+const SPLAT_RADIUS = 0.22; // ink blob size — wider = a heavier bead
+const DYE_AMOUNT = 0.085; // base ink deposited per move (kept faint)
 
 // Shared vertex shader: a fullscreen triangle that also hands each
 // neighbour texel coordinate to the fragment stage, so the stencil
@@ -218,9 +219,13 @@ const GRADIENT_SUBTRACT = /* glsl */ `
 // surface normal, then shade it like a thin liquid film: hue shifts
 // with both thickness and surface tilt (as a real oil film does with
 // viewing angle), with a glossy rim where the film bends and a crisp
-// edge so it reads as liquid, not smoke. Kept very low-alpha — a
-// shimmer, not a spill. Empty water is discarded so the page shows
-// straight through.
+// edge so it reads as liquid, not smoke.
+//
+// The trail is meant to be noticed but never read as a layer over the
+// page, so the alpha stays very low and the *colour* does the work:
+// tightly banded, fully saturated interference fringes rather than the
+// pearly wash a higher opacity would need. Empty water is discarded so
+// the page shows straight through.
 const DISPLAY = /* glsl */ `
   precision highp float;
   varying vec2 vUv;
@@ -239,15 +244,19 @@ const DISPLAY = /* glsl */ `
     float r = texture2D(uTexture, vUv + vec2(uDyeTexel.x, 0.0)).r;
     float tp = texture2D(uTexture, vUv + vec2(0.0, uDyeTexel.y)).r;
     float bt = texture2D(uTexture, vUv - vec2(0.0, uDyeTexel.y)).r;
-    vec3 n = normalize(vec3((l - r) * 4.0, (bt - tp) * 4.0, 0.18));
-    // angle-dependent thin-film hue, drifting slowly
-    float hue = c * 3.0 + (1.0 - n.z) * 0.6 + uTime * 0.025;
+    vec3 n = normalize(vec3((l - r) * 5.0, (bt - tp) * 5.0, 0.16));
+    // angle-dependent thin-film hue, drifting slowly. The higher thickness
+    // term packs the fringes tighter — that banding is what reads as oil.
+    float hue = c * 5.5 + (1.0 - n.z) * 0.95 + uTime * 0.02;
     vec3 col = iridescence(hue);
-    float rim = pow(1.0 - n.z, 2.0);     // glossy highlight on the bends
-    col += rim * 0.1;
-    col = mix(vec3(0.8), col, 0.85);     // pearly, not saturated
-    float a = smoothstep(0.004, 0.05, c) * 0.11 + rim * 0.03;
-    gl_FragColor = vec4(col, clamp(a, 0.0, 0.15));
+    // push the fringes past their natural saturation: at this alpha, washed
+    // colour would just be grey haze
+    float grey = dot(col, vec3(0.299, 0.587, 0.114));
+    col = clamp(mix(vec3(grey), col, 1.35), 0.0, 1.0);
+    float rim = pow(1.0 - n.z, 2.5);     // glossy highlight on the bends
+    col = mix(col, vec3(1.0), rim * 0.35);
+    float a = smoothstep(0.003, 0.03, c) * 0.07 + rim * 0.035;
+    gl_FragColor = vec4(col, clamp(a, 0.0, 0.11));
   }
 `;
 

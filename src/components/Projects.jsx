@@ -3,86 +3,29 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { projects } from "@/data/projects";
 import TiltCard from "@/components/TiltCard";
 import { explodeSound, assembleSound } from "@/lib/clicker";
 
-const DELAYS = ["d2", "d3", "d4"];
+// The projects section is a shelf of books seen edge-on: one full-height bar
+// per project, its name set vertically down the spine. Hovering (or, on touch,
+// tapping) a spine pulls it open and the project's data slides out beside the
+// name. Clicking anywhere in the opened spine — links excepted — lifts that
+// project's tilt card into the middle of a darkened screen, where it keeps
+// tilting toward the cursor at several times its old size.
 
 // Stable no-op store so useSyncExternalStore reports false on the server and
 // true on the client — the portal touches document.body only after hydration,
 // with no setState-in-effect.
 const subscribe = () => () => {};
 
-// The exploded sections don't just fade in — each one flies in from its own
-// side and springs into place, top row first, so the grid visibly assembles.
-// Indexed by render order: preview, title, summary, stack, links.
-const FROM = [
-  { x: 64, y: 8 }, // preview — from the right
-  { x: 0, y: -54 }, // title — from above
-  { x: -64, y: 8 }, // summary — from the left
-  { x: -50, y: 46 }, // stack — from the lower-left
-  { x: 50, y: 46 }, // links — from the lower-right
-];
-const REVEAL = [0.14, 0.06, 0.14, 0.22, 0.22]; // top row first, then each row
-
-const tileVariants = {
-  hidden: (i) => ({
-    opacity: 0,
-    x: FROM[i].x,
-    y: FROM[i].y,
-    scale: 0.82,
-    filter: "blur(7px)",
-    transition: { duration: 0.26, ease: [0.4, 0, 1, 1] },
-  }),
-  visible: (i) => ({
-    opacity: 1,
-    x: 0,
-    y: 0,
-    scale: 1,
-    filter: "blur(0px)",
-    transition: {
-      type: "spring",
-      stiffness: 230,
-      damping: 21,
-      delay: REVEAL[i],
-    },
-  }),
-};
-
-// The grid just orchestrates: it carries the hidden/visible labels its
-// children inherit; the per-tile springs above do the actual motion.
-const gridVariants = { hidden: {}, visible: {} };
-
-// Clicking a card lifts its five sections off the card and into a large,
-// illuminated grid in the center of a darkened screen — title across the top,
-// then description + image, then stack + links. The grid is rendered in a
-// body-level portal so it floats above everything (sidestepping the card's
-// tilt transform and the page's stacking contexts). Clicking anywhere — or
-// pressing Esc — sends the sections back onto the card. Links keep working and
-// don't dismiss the view.
-
-// The five sections, shared between the card and the centered overlay so each
-// renders identically in both. On the card they're plain blocks; in the
-// overlay (animate) each becomes a motion tile that springs into the grid.
-function CardSections({ project, animate = false }) {
-  const Tile = animate ? motion.div : "div";
-  const tileProps = (i) =>
-    animate
-      ? {
-          variants: tileVariants,
-          custom: i,
-          whileHover: {
-            y: -5,
-            transition: { type: "spring", stiffness: 300, damping: 20 },
-          },
-        }
-      : {};
-
+// The card's five sections, shared by the (hidden) shelf markup and the
+// centered modal so a project reads identically wherever it's rendered.
+function CardSections({ project }) {
   return (
     <>
-      <Tile className='layer' data-part='01 · preview' {...tileProps(0)}>
+      <div className='layer'>
         <div className='bar'>
           <span />
           <span />
@@ -92,14 +35,14 @@ function CardSections({ project, animate = false }) {
           <span className='status'>{project.status}</span>
           {project.slug}
         </div>
-      </Tile>
-      <Tile className='layer' data-part='02 · title' {...tileProps(1)}>
+      </div>
+      <div className='layer'>
         <h3>{project.name}</h3>
-      </Tile>
-      <Tile className='layer' data-part='03 · summary' {...tileProps(2)}>
+      </div>
+      <div className='layer'>
         <p>{project.description}</p>
-      </Tile>
-      <Tile className='layer' data-part='04 · stack' {...tileProps(3)}>
+      </div>
+      <div className='layer'>
         <div className='tags'>
           {project.tags.map((tag) => (
             <span className='tag' key={tag}>
@@ -107,8 +50,8 @@ function CardSections({ project, animate = false }) {
             </span>
           ))}
         </div>
-      </Tile>
-      <Tile className='layer' data-part='05 · links' {...tileProps(4)}>
+      </div>
+      <div className='layer'>
         <div className='links'>
           {project.live && (
             <a href={project.live} target='_blank' rel='noopener noreferrer'>
@@ -124,30 +67,31 @@ function CardSections({ project, animate = false }) {
             </Link>
           )}
         </div>
-      </Tile>
+      </div>
     </>
   );
 }
 
-function ProjectCard({ project, delay }) {
-  const [exploded, setExploded] = useState(false);
+export default function Projects() {
+  // Which spine is pulled open (hover on a mouse, tap on touch), and which
+  // project — if any — is currently blown up into the centered card.
+  const [openIdx, setOpenIdx] = useState(null);
+  const [modal, setModal] = useState(null);
   const hydrated = useSyncExternalStore(
     subscribe,
     () => true,
     () => false,
   );
-  const reduceMotion = useReducedMotion();
-  const overlayRef = useRef(null);
+  const dialogRef = useRef(null);
 
-  // While exploded: focus the overlay, Esc dismisses, the page underneath can't scroll.
+  // While the card is up: focus it, Esc dismisses, the page underneath can't scroll.
   useEffect(() => {
-    if (!exploded) return;
-    overlayRef.current?.focus();
+    if (!modal) return;
+    dialogRef.current?.focus();
     const onKey = (e) => {
-      if (e.key === "Escape") {
-        assembleSound();
-        setExploded(false);
-      }
+      if (e.key !== "Escape") return;
+      assembleSound();
+      setModal(null);
     };
     window.addEventListener("keydown", onKey);
     const prevOverflow = document.body.style.overflow;
@@ -156,86 +100,141 @@ function ProjectCard({ project, delay }) {
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prevOverflow;
     };
-  }, [exploded]);
+  }, [modal]);
 
-  // Clicks on a link never toggle the view.
-  const onCardClick = (e) => {
-    if (e.target.closest("a")) return;
-    explodeSound();
-    setExploded(true);
-  };
-  const onBackdropClick = (e) => {
-    if (e.target.closest("a")) return;
+  const close = () => {
     assembleSound();
-    setExploded(false);
+    setModal(null);
+  };
+
+  // A spine that's already open is a button for its card; a closed one just
+  // opens (the path touch pointers take, since they never hover). Links always
+  // win — they navigate, they don't summon the card.
+  const onSpineClick = (e, project, i) => {
+    if (e.target.closest("a")) return;
+    if (openIdx !== i) {
+      setOpenIdx(i);
+      return;
+    }
+    explodeSound();
+    setModal(project);
   };
 
   return (
-    <>
-      <TiltCard
-        className={`card reveal ${delay}`}
-        frozen={exploded}
-        inert={exploded || undefined}
-        onClick={onCardClick}
+    <section id='work' className='panel panel-bleed shelf-panel'>
+      <h2 className='sr-only'>The projects</h2>
+      {/* the card covering the shelf counts as leaving it — keep the spine
+          open underneath so closing the card puts you back where you were */}
+      <div
+        className='shelf'
+        onPointerLeave={() => {
+          if (!modal) setOpenIdx(null);
+        }}
       >
-        <div className='stack'>
-          <CardSections project={project} />
-        </div>
-      </TiltCard>
+        {projects.map((project, i) => {
+          const open = openIdx === i;
+          return (
+            <article
+              key={project.slug}
+              className={open ? "spine is-open" : "spine"}
+              onPointerEnter={(e) => {
+                if (e.pointerType !== "touch") setOpenIdx(i);
+              }}
+              onClick={(e) => onSpineClick(e, project, i)}
+            >
+              <button
+                type='button'
+                className='spine-label'
+                aria-expanded={open}
+                onFocus={() => setOpenIdx(i)}
+              >
+                <span className='spine-idx'>
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <span className='spine-name'>{project.name}</span>
+              </button>
+
+              <div className='spine-body' inert={!open || undefined}>
+                <div className='spine-content'>
+                  <span className='status'>{project.status}</span>
+                  <p>{project.description}</p>
+                  <div className='tags'>
+                    {project.tags.map((tag) => (
+                      <span className='tag' key={tag}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <div className='links'>
+                    {project.live && (
+                      <a
+                        href={project.live}
+                        target='_blank'
+                        rel='noopener noreferrer'
+                      >
+                        Live ↗
+                      </a>
+                    )}
+                    <a
+                      href={project.code}
+                      target='_blank'
+                      rel='noopener noreferrer'
+                    >
+                      Code ↗
+                    </a>
+                  </div>
+                  <span className='spine-cue'>click anywhere for the card</span>
+                </div>
+              </div>
+            </article>
+          );
+        })}
+      </div>
 
       {hydrated &&
         createPortal(
           <AnimatePresence>
-            {exploded && (
+            {modal && (
               <motion.div
-                key={project.slug}
-                className='xv-backdrop'
-                onClick={onBackdropClick}
+                className='pcard-veil'
+                onClick={close}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.25 }}
               >
                 <motion.div
-                  ref={overlayRef}
-                  className='card xv-grid'
+                  ref={dialogRef}
+                  className='pcard-slot'
                   role='dialog'
                   aria-modal='true'
-                  aria-label={`${project.name} — exploded view`}
+                  aria-label={`${modal.name} — project card`}
                   tabIndex={-1}
-                  variants={gridVariants}
-                  initial={reduceMotion ? false : "hidden"}
-                  animate={reduceMotion ? false : "visible"}
-                  exit={reduceMotion ? { opacity: 0 } : "hidden"}
+                  onClick={(e) => e.stopPropagation()}
+                  initial={{ opacity: 0, scale: 0.9, y: 18 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.94, y: 10 }}
+                  transition={{ type: "spring", stiffness: 220, damping: 24 }}
                 >
-                  <CardSections project={project} animate />
+                  <TiltCard className='card pcard'>
+                    <div className='stack'>
+                      <CardSections project={modal} />
+                    </div>
+                  </TiltCard>
+                  <button
+                    type='button'
+                    className='pcard-close'
+                    onClick={close}
+                    aria-label='Close project card'
+                  >
+                    ×
+                  </button>
                 </motion.div>
               </motion.div>
             )}
           </AnimatePresence>,
           document.body,
         )}
-    </>
-  );
-}
-
-export default function Projects() {
-  return (
-    <section id='work' className='section-pad'>
-      <div className='sec-head reveal d1'>
-        <span className='idx'>02</span>
-        <h2>The projects</h2>
-        <span className='sec-note'>click a card, any card</span>
-      </div>
-      <div className='grid'>
-        {projects.map((project, i) => (
-          <ProjectCard
-            key={project.slug}
-            project={project}
-            delay={DELAYS[i] || "d4"}
-          />
-        ))}
-      </div>
     </section>
   );
 }

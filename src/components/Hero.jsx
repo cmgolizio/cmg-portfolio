@@ -12,7 +12,7 @@ export default function Hero() {
   const openResume = () => window.dispatchEvent(new Event(RESUME_OPEN_EVENT));
 
   return (
-    <section className='hero' id='top'>
+    <section className='panel hero' id='top'>
       <div className='hero-main'>
         <span className='eyebrow reveal d1'>Christopher Golizio · Builder</span>
         {/* HeroAssemble owns the h1 entrance; .reveal is not needed here.

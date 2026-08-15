@@ -5,7 +5,7 @@ import ContactForm from "@/components/ContactForm";
 // every other section, so it re-skins and re-animates with the theme for free.
 export default function Contact() {
   return (
-    <section id='contact' className='section-pad contact'>
+    <section id='contact' className='panel contact'>
       <div className='sec-head reveal d1'>
         <span className='idx'>04</span>
         <h2>Talk to me</h2>
