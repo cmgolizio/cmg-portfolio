@@ -1534,7 +1534,8 @@ footer .muted a:hover {
    separate boards rather than one surface with seams in it. */
 .shelf {
   --spine-strip: clamp(3.6rem, 5.5vw, 5.6rem);
-  --shelf-rule: clamp(8px, .85vw, 14px);
+  /* as heavy as the rules in the sketch — roughly 1.4% of the screen */
+  --shelf-rule: clamp(10px, 1.4vw, 22px);
   flex: 1;
   min-height: 0;
   width: 100%;

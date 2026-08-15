@@ -111,16 +111,23 @@ export default function SectionSnap() {
       if (settling) return;
       let target = nearest();
 
-      // A wheel gesture moves exactly one panel: past the threshold you go on,
-      // short of it you come back — however far the flick actually carried the
-      // page. Anything else that moved it (a scrollbar drag, a nav link, a
-      // touch fling) is taken at face value and just lands on the closest.
+      // An ordinary wheel gesture gets the threshold: past it you go on by one,
+      // short of it you come back to where you started.
+      //
+      // Only while the page is still within a panel of where the gesture began,
+      // though. A trackpad fling keeps firing wheel events through a second or
+      // more of momentum, and the page really does travel those three screens
+      // before this ever runs — dragging it back two would be a lurch the
+      // visitor didn't ask for and can't predict. Once they've genuinely gone
+      // that far, the nearest panel is the honest answer.
       if (fromWheel) {
         fromWheel = false;
         const drift = window.scrollY - topOf(anchor);
-        const commit = Math.max(COMMIT_PX, window.innerHeight * COMMIT_SHARE);
-        const step = drift > commit ? 1 : drift < -commit ? -1 : 0;
-        target = Math.min(Math.max(anchor + step, 0), panels.length - 1);
+        if (Math.abs(drift) <= window.innerHeight * 1.1) {
+          const commit = Math.max(COMMIT_PX, window.innerHeight * COMMIT_SHARE);
+          const step = drift > commit ? 1 : drift < -commit ? -1 : 0;
+          target = Math.min(Math.max(anchor + step, 0), panels.length - 1);
+        }
       }
 
       const to = topOf(target);
