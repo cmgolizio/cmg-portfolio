@@ -36,6 +36,9 @@
 // Single source of truth for the work section.
 // Add/edit projects here; the Projects component maps over this list.
 //
+// `image` is OPTIONAL — a path under /public, e.g. "/shots/kinemagic.png".
+// Projects without one show a placeholder frame in their opened spine.
+//
 // `caseStudy` is OPTIONAL. When present, a static /work/[slug] page is built
 // for that project and a "Case study →" link appears in its exploded card.
 // Projects without it simply have no case-study page or link.

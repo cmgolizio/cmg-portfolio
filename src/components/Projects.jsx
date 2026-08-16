@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { projects } from "@/data/projects";
@@ -156,6 +157,20 @@ export default function Projects() {
 
               <div className='spine-body' inert={!open || undefined}>
                 <div className='spine-content'>
+                  {/* Optional `image` on the project; until one exists the
+                      frame stands in for it rather than collapsing. */}
+                  <div className='spine-shot'>
+                    {project.image ? (
+                      <Image
+                        src={project.image}
+                        alt=''
+                        fill
+                        sizes='(max-width: 720px) 62vw, 32vw'
+                      />
+                    ) : (
+                      <span className='spine-shot-note'>{project.slug}</span>
+                    )}
+                  </div>
                   <span className='status'>{project.status}</span>
                   <p>{project.description}</p>
                   <div className='tags'>

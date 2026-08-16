@@ -1534,8 +1534,7 @@ footer .muted a:hover {
    separate boards rather than one surface with seams in it. */
 .shelf {
   --spine-strip: clamp(3.6rem, 5.5vw, 5.6rem);
-  /* as heavy as the rules in the sketch — roughly 1.4% of the screen */
-  --shelf-rule: clamp(10px, 1.4vw, 22px);
+  --shelf-rule: clamp(7px, .95vw, 15px);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -1679,6 +1678,33 @@ footer .muted a:hover {
   flex-direction: column;
   align-items: flex-start;
   gap: .85rem;
+}
+
+/* the project's shot — or, until there is one, a frame holding its place */
+.spine-shot {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  margin-bottom: .2rem;
+  border-radius: max(calc(var(--radius) - 6px), 6px);
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--border));
+  background: linear-gradient(135deg,
+      var(--surface-alt),
+      color-mix(in srgb, var(--accent) 22%, var(--surface-alt)));
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.spine-shot img {
+  object-fit: cover;
+}
+
+.spine-shot-note {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .04em;
+  color: var(--text-muted);
 }
 
 .spine-content p {
