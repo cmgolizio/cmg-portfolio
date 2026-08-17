@@ -1534,7 +1534,10 @@ footer .muted a:hover {
    separate boards rather than one surface with seams in it. */
 .shelf {
   --spine-strip: clamp(3.6rem, 5.5vw, 5.6rem);
-  --shelf-rule: clamp(7px, .95vw, 15px);
+  --shelf-rule: clamp(4px, .5vw, 8px);
+  /* the spines open on their own quick clock, not the theme's — this has to
+     read as instant with just enough travel to be seen */
+  --spine-snap: .2s cubic-bezier(.2, .9, .25, 1);
   flex: 1;
   min-height: 0;
   width: 100%;
@@ -1552,11 +1555,13 @@ footer .muted a:hover {
   align-items: stretch;
   overflow: hidden;
   cursor: default;
+  /* off a right angle, well short of a rounded corner */
+  border-radius: 3px;
   background: linear-gradient(180deg,
       color-mix(in srgb, var(--surface) 84%, var(--spine-tint) 16%),
       color-mix(in srgb, var(--surface-alt) 78%, var(--spine-tint) 22%));
-  transition: flex-grow .55s var(--ease), background .45s var(--ease),
-    box-shadow .45s var(--ease);
+  transition: flex-grow var(--spine-snap), background .22s ease-out,
+    box-shadow .22s ease-out;
 }
 
 /* no two volumes on a shelf are the same colour */
@@ -1608,7 +1613,7 @@ footer .muted a:hover {
   /* set up the spine of a book: vertical, and reading from the foot upward */
   writing-mode: vertical-rl;
   transform: rotate(180deg);
-  transition: flex-grow .55s var(--ease), color .35s var(--ease);
+  transition: flex-grow var(--spine-snap), color .18s ease-out;
 }
 
 .spine.is-open .spine-label {
@@ -1660,14 +1665,14 @@ footer .muted a:hover {
   align-items: center;
   overflow: hidden;
   opacity: 0;
-  transition: flex-grow .55s var(--ease), opacity .25s var(--ease);
+  transition: flex-grow var(--spine-snap), opacity .12s ease-out;
 }
 
 .spine.is-open .spine-body {
   flex-grow: 1;
   opacity: 1;
-  /* wait for the spine to actually be open before fading the copy in */
-  transition: flex-grow .55s var(--ease), opacity .4s var(--ease) .14s;
+  /* the copy arrives with the slat, not after it */
+  transition: flex-grow var(--spine-snap), opacity .16s ease-out .04s;
 }
 
 /* fixed measure: the copy must not reflow while the spine is opening */

@@ -26,15 +26,19 @@ import { useEffect } from "react";
 // page is simply stuck. Nothing here can produce that outcome; the worst case
 // if the logic below is wrong is that the page doesn't line up.
 
-const REST_MS = 160; // quiet this long and a wheel gesture is over
+const REST_MS = 120; // quiet this long and a wheel gesture is over
 // Everything else that scrolls the page — a nav link, a paging key, the
 // scrollbar — is given a much longer quiet window. Those are animations we
 // don't own, and a single slow frame in the middle of one looks exactly like
 // a finished gesture; settling into that gap would drag the visitor back to
 // whichever panel they happened to be passing.
 const REST_SLOW_MS = 450;
-const TRAVEL_MAX = 520; // longest a settle may take
-const TRAVEL_RATE = 0.42; // ms per px, so a short spring-back stays quick
+// The settle is meant to read as a magnet taking the section, not as the page
+// easing over: it leaves hard and arrives exactly, so the travel is short and
+// the curve is steep — most of the distance is covered in the first third of
+// the time, and the last few pixels are placed rather than drifted into.
+const TRAVEL_MAX = 380; // longest a settle may take
+const TRAVEL_RATE = 0.3; // ms per px, so a short spring-back stays quick
 // How far the page must actually move to be taken forward. It has to sit under
 // one detent of any browser's mouse wheel — otherwise a wheel user nudges the
 // page and watches it slide back, over and over, which reads as a site that
@@ -45,10 +49,10 @@ const COMMIT_SHARE = 0.06;
 // DEPTH scales it. DEPTH must stay below 1/e — at exactly 1/e the section is
 // pinned dead still for the first instant, and any higher it would creep
 // *backwards* as you scroll forward, which reads as a bug rather than weight.
-const HOLD_RANGE = 0.16;
-const HOLD_DEPTH = 0.3;
+const HOLD_RANGE = 0.13;
+const HOLD_DEPTH = 0.33;
 
-const easeOut = (t) => 1 - Math.pow(1 - t, 3);
+const easeOut = (t) => 1 - Math.pow(1 - t, 4.2);
 
 export default function SectionSnap() {
   useEffect(() => {
@@ -135,7 +139,7 @@ export default function SectionSnap() {
     const travel = (to) => {
       const from = window.scrollY;
       const dist = to - from;
-      const ms = Math.min(TRAVEL_MAX, 170 + Math.abs(dist) * TRAVEL_RATE);
+      const ms = Math.min(TRAVEL_MAX, 120 + Math.abs(dist) * TRAVEL_RATE);
       settling = true;
       root.style.scrollBehavior = "auto";
       const startedAt = performance.now();
